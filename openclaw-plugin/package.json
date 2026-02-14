@@ -1,0 +1,14 @@
+{
+  "name": "@openclaw/botciv",
+  "version": "0.1.0",
+  "description": "OpenClaw bot_civ channel plugin",
+  "type": "module",
+  "devDependencies": {
+    "openclaw": "workspace:*"
+  },
+  "openclaw": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}

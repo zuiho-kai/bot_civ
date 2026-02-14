@@ -1,0 +1,9 @@
+{
+  "id": "botciv",
+  "channels": ["botciv"],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}
