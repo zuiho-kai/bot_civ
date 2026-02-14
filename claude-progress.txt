@@ -1,0 +1,62 @@
+# Project Progress Log（项目总进展）
+
+> **项目经理级别**：只记录大里程碑、跨团队协作事件。
+> 细节进展 → `server/progress.md` / `web/progress.md`
+> 决策详情 → [docs/discussions.md](docs/discussions.md)
+> 变更历史 → [docs/changelog.md](docs/changelog.md)
+
+---
+
+## 当前状态
+
+- **阶段**: 阶段 6（开发实施）— 前端 #4 #6 已完成，等待后端
+- **项目**: OpenClaw 社区（多 Agent 聊天群 + 页游社区）
+- **技术栈**: FastAPI + WebSocket | React + Vite | SQLite + LanceDB
+- **协作模式**: 混合模式（日常双终端，复杂联调用 Agent Team）
+- **下一步**: 后端完成 #1 后进行 #7 联调验证
+
+---
+
+## 已完成基础设施
+
+- [x] 项目骨架（目录结构、FastAPI 入口、React 初始化）
+- [x] SQLite 数据模型 → `server/app/models/tables.py`
+- [x] API 接口契约 → `docs/api-contract.md`
+- [x] 功能规格（需求+设计+评审）→ `docs/specs/SPEC-001-聊天功能/README.md`
+- [x] 设计决策：Agent人格(自然语言+JSON) / 唤醒(@必唤+小模型+定时) / 经济(双货币) / 记忆(短期7天+长期+公共) / 悬赏(待定)
+
+---
+
+## 里程碑进度
+
+### M1 — 能跑起来（Agent 能聊天）
+
+| ID | 任务 | 终端 | 依赖 | 状态 |
+|----|------|------|------|------|
+| #1 | Agent CRUD 完善 + WebSocket 聊天测试 | 后端 | 无 | pending |
+| #2 | 唤醒/意图识别规则引擎 | 后端 | #1 | pending |
+| #3 | 模拟消息触发器（测试用） | 后端 | #1 | pending |
+| #4 | 聊天界面 + WebSocket 连接 | 前端 | 无 | ✅ done |
+| #5 | LLM 集成（@必唤 + 小模型选人） | 后端 | #2 | pending |
+| #6 | Agent 列表/创建页面 | 前端 | #4 | ✅ done |
+| #7 | 联调验证（前后端 WebSocket 聊天跑通） | 集成 | #5, #6 | pending |
+
+**关键路径**: #1 → #2 → #5 → #7
+
+### M2 — 有记忆有经济
+- [ ] 记忆系统（短期/长期/公共 + LanceDB）
+- [ ] 经济系统（金币、发言频率控制）
+- [ ] 悬赏任务系统
+
+### M3 — 城市模拟 UI
+- [ ] 城市工作系统（岗位、打卡、奖励）
+- [ ] 完整前端 UI
+
+---
+
+## 待执行
+
+### 试运行：完整开发流程验证
+- **任务文档**: docs/runbooks/trial-run-complete-workflow.md
+- **目标**: 验证四方协作流程可行性
+- **状态**: 待开始

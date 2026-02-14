@@ -1,0 +1,574 @@
+/* ============================================
+   Discord-style Layout
+   ============================================ */
+
+.discord-layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* --- Server Rail (72px left) --- */
+.server-rail {
+  width: 72px;
+  flex-shrink: 0;
+  background: var(--server-rail-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 0;
+  gap: 8px;
+}
+
+.server-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-radius 0.2s;
+}
+
+.server-icon:hover,
+.server-icon.active {
+  border-radius: 16px;
+}
+
+.server-rail-divider {
+  width: 32px;
+  height: 2px;
+  background: var(--sidebar-divider);
+  border-radius: 1px;
+}
+
+.server-rail-spacer {
+  flex: 1;
+}
+
+.server-rail-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: var(--sidebar-hover);
+  color: var(--sidebar-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-radius 0.2s;
+}
+
+.server-rail-btn:hover {
+  background: var(--accent-primary);
+  color: #fff;
+  border-radius: 16px;
+}
+
+/* --- Channel Sidebar (240px) --- */
+.channel-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--channel-sidebar-bg);
+  display: flex;
+  flex-direction: column;
+}
+
+.server-header {
+  height: 48px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--sidebar-text-active);
+  border-bottom: 1px solid var(--sidebar-divider);
+  cursor: default;
+}
+
+.channel-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.channel-category {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--sidebar-text);
+  padding: 16px 8px 4px;
+}
+
+.channel-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  color: var(--sidebar-text);
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background 0.1s, color 0.1s;
+}
+
+.channel-item:hover {
+  background: var(--channel-hover);
+  color: var(--sidebar-text-active);
+}
+
+.channel-item.active {
+  background: var(--channel-active);
+  color: var(--sidebar-text-active);
+}
+
+.channel-hash {
+  font-size: 1.2rem;
+  opacity: 0.5;
+  font-weight: 400;
+}
+
+/* --- Chat Area (center, flex:1) --- */
+.chat-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--surface-chat);
+}
+
+/* Header */
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: var(--surface-header);
+  border-bottom: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.chat-header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.channel-hash-header {
+  font-size: 1.3rem;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.chat-header h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+.conn-status {
+  font-size: 0.8rem;
+  padding: 2px 10px;
+  border-radius: 10px;
+}
+
+.conn-status.on {
+  background: var(--status-online-bg);
+  color: var(--status-online);
+}
+
+.conn-status.off {
+  background: var(--status-busy-bg);
+  color: var(--status-busy);
+}
+
+/* --- Message List --- */
+.message-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-chat);
+}
+
+.msg-empty {
+  text-align: center;
+  color: var(--text-muted);
+  margin-top: 40px;
+}
+
+/* --- Discord-style Message Row --- */
+.msg-row {
+  display: flex;
+  gap: 16px;
+  padding: 2px 20px;
+  transition: background 0.1s;
+}
+
+.msg-row:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.msg-row.has-header {
+  margin-top: 16px;
+  padding-top: 4px;
+}
+
+.msg-avatar-spacer {
+  width: 40px;
+  flex-shrink: 0;
+}
+
+.msg-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.msg-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.msg-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-accent);
+}
+
+.msg-time {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.msg-content {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.msg-system {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  padding: 4px 0;
+}
+
+/* --- Chat Input --- */
+.chat-input {
+  display: flex;
+  gap: 8px;
+  padding: 12px 20px;
+  background: var(--surface-chat);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.chat-input input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.chat-input input:focus {
+  border-color: var(--border-focus);
+}
+
+.chat-input button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--accent-primary);
+  color: #ffffff;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.chat-input button:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.chat-input button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* --- Info Panel (260px right) --- */
+.info-panel {
+  width: 260px;
+  flex-shrink: 0;
+  background: var(--info-panel-bg);
+  border-left: 1px solid var(--sidebar-divider);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.info-panel-section {
+  padding: 16px;
+}
+
+.info-panel-section h3 {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+/* Announcement Panel */
+.announcement-panel {
+  border-bottom: 1px solid var(--sidebar-divider);
+}
+
+.announcement-item {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.announcement-item:last-child {
+  border-bottom: none;
+}
+
+.announcement-content {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.announcement-meta {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* Agent Status Panel */
+.agent-status-panel {
+  flex: 1;
+}
+
+.agent-status-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.agent-status-avatar {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.agent-status-dot {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--info-panel-bg);
+}
+
+.agent-status-dot.idle {
+  background: #57f287;
+}
+
+.agent-status-dot.busy {
+  background: #faa61a;
+}
+
+.agent-status-dot.offline {
+  background: #747f8d;
+}
+
+.agent-status-info {
+  min-width: 0;
+}
+
+.agent-status-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.agent-status-activity {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ============================================
+   Agent Manager (kept from original)
+   ============================================ */
+.agent-manager {
+  padding: 24px;
+  max-width: 800px;
+  margin: 0 auto;
+  background: var(--surface-chat);
+  min-height: 100%;
+  overflow-y: auto;
+}
+
+.am-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.am-header h2 {
+  font-size: 1.2rem;
+  color: var(--text-heading);
+}
+
+.am-header button {
+  padding: 8px 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--accent-primary);
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.15s;
+}
+
+.am-header button:hover {
+  background: var(--accent-hover);
+}
+
+.am-loading,
+.am-empty {
+  text-align: center;
+  color: var(--text-muted);
+  margin-top: 40px;
+}
+
+.am-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.agent-card {
+  padding: 16px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.ac-name {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--text-heading);
+}
+
+.ac-persona {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.ac-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.ac-status {
+  padding: 1px 8px;
+  border-radius: var(--radius-md);
+  font-size: 0.75rem;
+}
+
+.ac-status.idle {
+  background: var(--status-online-bg);
+  color: var(--status-online);
+}
+
+.ac-status.busy {
+  background: var(--status-busy-bg);
+  color: var(--status-busy);
+}
+
+.ac-status.offline {
+  background: var(--status-offline-bg);
+  color: var(--status-offline);
+}
+
+/* Create Agent Form */
+.create-agent-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.create-agent-form input,
+.create-agent-form textarea,
+.create-agent-form select {
+  padding: 10px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.create-agent-form input:focus,
+.create-agent-form textarea:focus {
+  border-color: var(--border-focus);
+}
+
+.create-agent-form button {
+  padding: 10px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--accent-primary);
+  color: #ffffff;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.create-agent-form button:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.create-agent-form button:disabled {
+  opacity: 0.4;
+}
+
+.form-error {
+  color: var(--status-error);
+  font-size: 0.85rem;
+}

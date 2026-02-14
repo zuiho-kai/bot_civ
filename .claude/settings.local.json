@@ -1,0 +1,42 @@
+{
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(dir:*)",
+      "Bash(powershell -Command:*)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "WebFetch(domain:www.anthropic.com)",
+      "Bash(gh repo view:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:stack.convex.dev)",
+      "Bash(gh api:*)",
+      "mcp__github__get_file_contents",
+      "Bash(npx tsc:*)",
+      "mcp__playwright__browser_navigate",
+      "mcp__memory-keeper__context_status",
+      "mcp__github__search_repositories",
+      "mcp__playwright__browser_snapshot",
+      "mcp__memory-keeper__context_session_list"
+    ]
+  },
+
+  "redact": {
+    "patterns": [
+      "sk-[a-zA-Z0-9]{20,}",
+      "ghp_[a-zA-Z0-9]{36}",
+      "github_pat_[a-zA-Z0-9_]{80,}",
+      "AKIA[0-9A-Z]{16}",
+      "-----BEGIN OPENSSH PRIVATE KEY-----",
+      "-----BEGIN RSA PRIVATE KEY-----",
+      "-----BEGIN EC PRIVATE KEY-----",
+      "password\\s*=\\s*.+",
+      "token\\s*=\\s*.+",
+      "api[_-]?key\\s*=\\s*.+",
+      "secret\\s*=\\s*.+"
+    ]
+  }
+}

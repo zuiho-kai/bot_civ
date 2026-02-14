@@ -1,0 +1,11 @@
+node_modules/
+dist/
+__pycache__/
+*.pyc
+.env
+data/
+*.db
+.vite/
+nul
+.playwright-mcp/
+.venv/

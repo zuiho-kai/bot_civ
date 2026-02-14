@@ -1,0 +1,151 @@
+/* ============================================
+   Theme System - CSS Custom Properties
+   Switch via data-theme attribute on <html>
+   ============================================ */
+
+/* --- CIVITAS theme (default) --- */
+/* Inspired by CIVITAS2: steel-blue headings, light base, colorful accents */
+:root,
+[data-theme="civitas"] {
+  /* Base */
+  --bg-primary: #f5f5f0;
+  --bg-secondary: #eaeae4;
+  --bg-tertiary: #ffffff;
+  --bg-input: #ffffff;
+
+  /* Surfaces */
+  --surface-sidebar: #2b2d31;
+  --surface-chat: #f5f5f0;
+  --surface-header: #eaeae4;
+  --surface-nav: rgb(69, 69, 69);
+
+  /* Borders */
+  --border-primary: rgb(211, 227, 254);
+  --border-subtle: #d5d5d0;
+  --border-focus: rgb(57, 85, 115);
+
+  /* Text */
+  --text-primary: #2e2e2e;
+  --text-secondary: #666666;
+  --text-muted: #999999;
+  --text-heading: rgb(57, 85, 115);
+  --text-accent: rgb(50, 100, 150);
+  --text-on-dark: #e0e0e0;
+  --text-on-nav: #ffffff;
+
+  /* Accent */
+  --accent-primary: rgb(57, 85, 115);
+  --accent-hover: rgb(40, 65, 95);
+  --accent-subtle: rgba(57, 85, 115, 0.1);
+
+  /* Message bubbles */
+  --msg-human-bg: rgb(57, 85, 115);
+  --msg-human-text: #ffffff;
+  --msg-agent-bg: #e8e8e2;
+  --msg-agent-text: #2e2e2e;
+
+  /* Status */
+  --status-online: #4caf50;
+  --status-online-bg: #e8f5e9;
+  --status-busy: #ff9800;
+  --status-busy-bg: #fff3e0;
+  --status-offline: #999;
+  --status-offline-bg: #eeeeee;
+  --status-error: rgb(210, 60, 60);
+
+  /* Functional colors (CIVITAS2 dashboard palette) */
+  --func-purple: rgb(130, 60, 120);
+  --func-teal: rgb(0, 170, 170);
+  --func-gray: rgb(70, 70, 70);
+  --func-red: rgb(240, 50, 20);
+
+  /* Sidebar (dark, Discord-style) */
+  --sidebar-bg: #2b2d31;
+  --sidebar-text: #949ba4;
+  --sidebar-text-active: #ffffff;
+  --sidebar-hover: #35373c;
+  --sidebar-divider: #3f4147;
+
+  /* Misc */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.12);
+
+  /* Nav tab active indicator */
+  --nav-active-indicator: rgb(211, 227, 254);
+
+  /* Discord layout */
+  --server-rail-bg: #1e1f22;
+  --channel-sidebar-bg: #2b2d31;
+  --info-panel-bg: #f0f0ea;
+  --channel-active: #404249;
+  --channel-hover: #35373c;
+  --surface-chat: #f5f5f0;
+}
+
+/* --- Dark theme (original) --- */
+[data-theme="dark"] {
+  --bg-primary: #1a1a2e;
+  --bg-secondary: #16213e;
+  --bg-tertiary: #0f0f23;
+  --bg-input: #1a1a2e;
+
+  --surface-sidebar: #16213e;
+  --surface-chat: #1a1a2e;
+  --surface-header: #16213e;
+  --surface-nav: #0f0f23;
+
+  --border-primary: #2a2a4a;
+  --border-subtle: #2a2a4a;
+  --border-focus: #7b8cde;
+
+  --text-primary: #e0e0e0;
+  --text-secondary: #999999;
+  --text-muted: #666666;
+  --text-heading: #e0e0e0;
+  --text-accent: #7b8cde;
+  --text-on-dark: #e0e0e0;
+  --text-on-nav: #e0e0e0;
+
+  --accent-primary: #0f3460;
+  --accent-hover: #1a4a8a;
+  --accent-subtle: rgba(123, 140, 222, 0.1);
+
+  --msg-human-bg: #0f3460;
+  --msg-human-text: #e0e0e0;
+  --msg-agent-bg: #2a2a4a;
+  --msg-agent-text: #e0e0e0;
+
+  --status-online: #4caf50;
+  --status-online-bg: #0f3d0f;
+  --status-busy: #ff9800;
+  --status-busy-bg: #3d1f0f;
+  --status-offline: #555;
+  --status-offline-bg: #2a2a2a;
+  --status-error: #e74c3c;
+
+  --func-purple: #9b59b6;
+  --func-teal: #1abc9c;
+  --func-gray: #7f8c8d;
+  --func-red: #e74c3c;
+
+  --sidebar-bg: #16213e;
+  --sidebar-text: #999;
+  --sidebar-text-active: #e0e0e0;
+  --sidebar-hover: #1a2a4e;
+  --sidebar-divider: #2a2a4a;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.4);
+
+  --nav-active-indicator: #7b8cde;
+
+  /* Discord layout */
+  --server-rail-bg: #0a0a1e;
+  --channel-sidebar-bg: #16213e;
+  --info-panel-bg: #16213e;
+  --channel-active: #1a2a4e;
+  --channel-hover: #1a2a4e;
+}
