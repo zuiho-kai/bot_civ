@@ -58,6 +58,17 @@ async def call_wakeup_model(prompt: str) -> str:
 
 
 class WakeupService:
+    def __init__(self) -> None:
+        self._no_response_count: dict[int, int] = {}  # {agent_id: 连续无回应次数}
+
+    def record_response(self, agent_id: int) -> None:
+        """有人回应时重置计数器"""
+        self._no_response_count[agent_id] = 0
+
+    def record_no_response(self, agent_id: int) -> None:
+        """无人回应时计数器+1"""
+        self._no_response_count[agent_id] = self._no_response_count.get(agent_id, 0) + 1
+
     async def process(
         self, message: Message, online_agent_ids: set[int], db: AsyncSession
     ) -> list[int]:
@@ -65,6 +76,11 @@ class WakeupService:
         处理消息，返回需要唤醒的 agent_id 列表。
         不包含发送者自身，不包含 Human Agent (id=0)。
         """
+        # 频率控制：人类说话 → 重置所有 agent 计数
+        if message.sender_type == "human":
+            for aid in list(self._no_response_count):
+                self.record_response(aid)
+
         wake_list: list[int] = []
 
         # 1. @提及必唤（不要求在线，Agent 由服务端驱动回复）
@@ -85,6 +101,10 @@ class WakeupService:
             if selected:
                 wake_list.append(selected)
 
+        # 频率控制：agent 消息触发了新唤醒 → 记录无回应
+        if message.sender_type == "agent" and wake_list:
+            self.record_no_response(message.agent_id)
+
         return wake_list
 
     async def _select_responder(
@@ -97,7 +117,9 @@ class WakeupService:
 
         recent = await self._get_recent_messages(db, limit=10)
         agent_list = "\n".join(
-            f"- {a.name}: {a.persona[:80]}" for a in candidates
+            f"- {a.name}: {a.persona[:80]}"
+            + ("（最近发言较多，建议让其他人说话）" if self._no_response_count.get(a.id, 0) >= 3 else "")
+            for a in candidates
         )
         recent_text = "\n".join(
             f"{m.agent.name if m.agent else 'unknown'}: {m.content[:100]}"
@@ -123,7 +145,9 @@ class WakeupService:
 
         recent = await self._get_recent_messages(db, limit=10)
         agent_list = "\n".join(
-            f"- {a.name}: {a.persona[:80]}" for a in candidates
+            f"- {a.name}: {a.persona[:80]}"
+            + ("（最近发言较多，建议让其他人说话）" if self._no_response_count.get(a.id, 0) >= 3 else "")
+            for a in candidates
         )
         recent_text = "\n".join(
             f"{m.agent.name if m.agent else 'unknown'}: {m.content[:100]}"
@@ -179,7 +203,9 @@ class WakeupService:
         if not online_agent_ids:
             return []
         candidate_ids = [
-            aid for aid in online_agent_ids if aid != exclude_id and aid != 0
+            aid for aid in online_agent_ids
+            if aid != exclude_id and aid != 0
+            and self._no_response_count.get(aid, 0) < 5
         ]
         if not candidate_ids:
             return []

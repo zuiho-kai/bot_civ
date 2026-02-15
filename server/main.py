@@ -3,9 +3,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select
 from app.core import init_db
+from app.core.config import settings
 from app.core.database import async_session
 from app.models import Agent
 from app.api import agents_router, chat_router, dev_router
+from app.services.vector_store import init_vector_store
 
 
 async def ensure_human_agent():
@@ -21,6 +23,7 @@ async def ensure_human_agent():
 async def lifespan(app: FastAPI):
     await init_db()
     await ensure_human_agent()
+    await init_vector_store(settings.lancedb_path)
     yield
 
 

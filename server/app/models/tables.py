@@ -104,3 +104,18 @@ class Bounty(Base):
     claimed_by = Column(Integer, ForeignKey("agents.id"), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     completed_at = Column(DateTime, nullable=True)
+
+
+# LLM 用量追踪
+class LLMUsage(Base):
+    __tablename__ = "llm_usage"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    model = Column(String(64), nullable=False)
+    agent_id = Column(Integer, ForeignKey("agents.id"), nullable=True)
+    prompt_tokens = Column(Integer, default=0)
+    completion_tokens = Column(Integer, default=0)
+    total_tokens = Column(Integer, default=0)
+    cost = Column(Float, default=0.0)
+    latency_ms = Column(Integer, default=0)
+    created_at = Column(DateTime, server_default=func.now())

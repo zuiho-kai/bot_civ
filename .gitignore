@@ -9,3 +9,4 @@ data/
 nul
 .playwright-mcp/
 .venv/
+*.bat

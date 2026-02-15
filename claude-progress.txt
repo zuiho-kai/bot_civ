@@ -9,7 +9,7 @@
 
 ## 当前状态
 
-- **阶段**: M1.5 完成，M2 待开始
+- **阶段**: M2 Phase 1 完成，Phase 2 待开始
 - **项目**: OpenClaw 社区（多 Agent 聊天群 + 页游社区）
 - **技术栈**: FastAPI + WebSocket | React + Vite | SQLite + LanceDB
 - **协作模式**: 混合模式（日常双终端，复杂联调用 Agent Team）
@@ -105,7 +105,15 @@ Phase 6（验证）：
   M2-11 端到端验证           ← 全部完成
 ```
 
-**当前状态**: Phase 1 待开始
+**当前状态**: Phase 1 ✅ 完成（2026-02-15），Phase 2 待开始
+
+**Phase 1 完成记录（2026-02-15）**：
+- M2-1  LanceDB 向量存储层 ✅ — `server/app/services/vector_store.py`（bge-small-zh-v1.5, 512维）
+- M2-5  经济服务 ✅ — `server/app/services/economy_service.py`（check/deduct/transfer/balance）
+- M2-13 LLM 用量追踪 ✅ — `LLMUsage` 模型 + `agent_runner.py` 记录
+- M2-14 频率控制自适应 ✅ — `wakeup_service.py` 连续无回应计数器
+- M2-15 唤醒模型 .env 可配 — 未实施（遗留）
+- 测试验收：50 tests passed（`server/tests/test_economy.py` 18个 + `test_wakeup_frequency.py` 6个 + `test_llm_usage.py` 4个 + 既有11个）
 
 ### M3 — 城市模拟 UI
 - [ ] 城市工作系统（岗位、打卡、奖励）

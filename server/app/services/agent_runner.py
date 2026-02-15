@@ -4,11 +4,34 @@ Agent 自动回复引擎
 Phase 1：直接使用 OpenAI/Anthropic SDK 调用 LLM
 Phase 2：替换为 OpenClaw SDK（外部接口不变）
 """
+import asyncio
 import logging
+import time
 from openai import AsyncOpenAI
 from ..core.config import resolve_model
+from ..core.database import async_session as db_session_maker
+from ..models.tables import LLMUsage
 
 logger = logging.getLogger(__name__)
+
+
+async def _record_usage(model: str, agent_id: int, usage, latency_ms: int):
+    """异步写入 LLM 用量记录，不阻塞主流程"""
+    try:
+        async with db_session_maker() as session:
+            record = LLMUsage(
+                model=model,
+                agent_id=agent_id,
+                prompt_tokens=usage.prompt_tokens or 0,
+                completion_tokens=usage.completion_tokens or 0,
+                total_tokens=usage.total_tokens or 0,
+                latency_ms=latency_ms,
+            )
+            session.add(record)
+            await session.commit()
+    except Exception as e:
+        logger.warning("Failed to record LLM usage: %s", e)
+
 
 SYSTEM_PROMPT_TEMPLATE = """你是 {name}，一个聊天群里的成员。
 
@@ -67,11 +90,17 @@ class AgentRunner:
 
             base_url, api_key, model_id = resolved
             client = AsyncOpenAI(api_key=api_key, base_url=base_url)
+            start = time.time()
             response = await client.chat.completions.create(
                 model=model_id,
                 messages=messages,
                 max_tokens=200,
             )
+            latency_ms = int((time.time() - start) * 1000)
+            if response.usage:
+                asyncio.create_task(_record_usage(
+                    model_id, self.agent_id, response.usage, latency_ms
+                ))
             reply = response.choices[0].message.content
             if reply:
                 reply = reply.strip()
