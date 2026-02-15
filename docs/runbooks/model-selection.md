@@ -33,7 +33,7 @@
 | 测试用例 | Sonnet | 边界条件识别 |
 | 代码实施（简单） | Sonnet | CRUD、单文件改动、UI 调整 |
 | 代码实施（复杂） | **Opus** | 算法、多模块联动、复杂业务逻辑 |
-| 三方辩论 | Sonnet | 论证、反驳（3个并行，成本可控） |
+| 协作讨论 | Sonnet | 多角度分析、融合方案（3个并行，成本可控） |
 | 文档记录 | **Haiku** | 进度更新、格式化写入 |
 | 文件操作 | **Haiku** | Grep、Glob、Read |
 
@@ -48,13 +48,13 @@
 - **Tech Lead**：Sonnet（技术判断和可行性分析）
 - **Developer**：Sonnet（简单）/ Opus（复杂）
 - **QA Lead**：Sonnet（测试场景设计和边界思考）
-- **Debater**：Sonnet（论证能力，3个并行时成本可控）
+- **Discussion Expert**：Sonnet（多角度分析，3个并行时成本可控）
 - **Recorder**：**Haiku**（格式化记录，快速完成）
 
 ## 成本优化原则
 
 1. **格式化任务优先 Haiku**：记录、搜索、简单读写
-2. **并行任务避免 Opus**：辩论（3个Agent）用 Sonnet
+2. **并行任务避免 Opus**：讨论（3个Agent）用 Sonnet
 3. **复杂代码必须 Opus**：算法、多模块联动，Sonnet 容易出错
 4. **默认用 Sonnet**：不确定时的安全选择
 
@@ -62,7 +62,7 @@
 
 ```python
 Task(model="haiku", prompt="更新 claude-progress.txt...")          # 格式化写入
-Task(model="sonnet", prompt="论证方案A的优势...")                   # 辩论，3个并行
+Task(model="sonnet", prompt="从性能角度分析方案A...")                   # 讨论，3个并行
 Task(model="sonnet", prompt="实现 Agent CRUD API...")              # 简单 CRUD
 Task(model="opus", prompt="实现唤醒服务的小模型选人算法...")          # 复杂逻辑
 Task(model="opus", prompt="设计分布式记忆系统架构...")               # 复杂架构

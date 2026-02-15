@@ -43,14 +43,14 @@
 **Agent Team 实现**：
 - 各 Agent 独立评估后汇总到共享任务列表
 - Architect 综合四方意见，整理需求澄清文档
-- 如有重大分歧，发起三方辩论（见 [debate-workflow.md](debate-workflow.md)）
+- 如有重大分歧，发起协作讨论（见 [debate-workflow.md](debate-workflow.md)）
 
 **产出**：`docs/specs/SPEC-XXX-功能名/spec.md`（需求概述 + 四方评审结论 + Go/No-Go）
 
 **检查点**：
 - [ ] spec 文件已创建，四方评审意见已记录
 - [ ] Go/No-Go 决策已做出
-- [ ] 如有分歧已通过辩论解决
+- [ ] 如有分歧已通过讨论解决
 
 ---
 

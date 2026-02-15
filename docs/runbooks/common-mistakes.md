@@ -10,7 +10,7 @@
 |------|--------|---------|
 | 💻 开发者 | [error-book-dev.md](error-book-dev.md) | 前后端协作、代码实施、环境踩坑 |
 | 📋 项目经理 | [error-book-pm.md](error-book-pm.md) | 进度记录、里程碑同步、上下文管理 |
-| 🏗️ 架构师 / ⚖️ 辩论者 | [error-book-debate.md](error-book-debate.md) | 辩论流程、方案设计、决策记录 |
+| 🏗️ 架构师 / ⚖️ 讨论专家 | [error-book-debate.md](error-book-debate.md) | 讨论流程、方案设计、决策记录 |
 | 🧪 QA Lead | [error-book-qa.md](error-book-qa.md) | 测试设计、测试执行、Bug 报告 |
 | 📝 记录员 | [error-book-recorder.md](error-book-recorder.md) | 讨论落盘、索引维护、信息去重 |
 
@@ -32,7 +32,7 @@
 
 ### COMMON-3 详细内容放在索引文件里
 
-❌ discussions.md 里放完整的辩论过程（几百行）
+❌ discussions.md 里放完整的讨论过程（几百行）
 ✅ 索引文件只放表格/链接，详细内容在独立文件里
 > 索引文件要轻，详细内容按需加载。
 
