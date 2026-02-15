@@ -9,6 +9,7 @@
 
 ### 角色定义 (`docs/personas/`)
 - [角色索引](docs/personas/roles.md) — 全角色一览 + 协作原则 + 模型选择速记
+- **👤 人类替身 PM**: [human-proxy-pm.md](docs/personas/human-proxy-pm.md) + [知识库](docs/personas/human-proxy-knowledge.md) — 设计讨论必选参与者
 - 各角色独立文件，按需加载：architect / pm / developer / qa-lead / tech-lead / discussion-expert / recorder
 
 ### 功能规格 (`docs/specs/`)
@@ -77,7 +78,8 @@
 ```
 用户提出需求 → [架构师] 判断复杂度
   ├── 简单 → 直接实施
-  └── 复杂 → 协作讨论 → [PM] 拆解任务 → [开发者] 逐个实施
+  └── 复杂 → [人类替身PM] 对齐用户意图 → 协作讨论 → [PM] 拆解任务 → [开发者] 逐个实施
+设计决策前 → 先问 [人类替身PM]，不确定的再问真人
 每完成一个任务 → 📝 更新进度文件
 ```
 
