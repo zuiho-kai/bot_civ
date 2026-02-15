@@ -15,6 +15,9 @@
 - M2 Phase 2 完成（记忆服务+发言扣费+定时任务）
 - 62 tests passed
 - 文档重构：README/ROADMAP/CONTRIBUTING 增强吸引力
+- 🚨 全链路漏检经验沉淀：DEV-BUG-7 SQLite 并发死锁（200刀教训）
+  - 新增 COMMON-8（技术选型隐含约束全链路看护）、COMMON-9（三步止血规则）
+  - 各角色错题本追加专属条目：DEBATE-5 / QA-5 / PM-5 / REC-6
 
 ### 2026-02-15
 - M2 Phase 1 完成（向量存储+经济服务+用量追踪+频率控制）

@@ -45,3 +45,20 @@
 被否决：Django（生态重、启动慢）、Go（AI生态弱）
 ```
 > 记录为什么不选，避免未来重复讨论。
+
+### DEBATE-5 技术选型只评估功能，不列隐含约束
+
+❌ 选型讨论只比较"SQLite 轻量 vs PostgreSQL 重"，结论写"选 SQLite"就结束
+✅ 选型结论必须附带**约束清单**：该技术在本项目场景下的并发限制、必要配置、已知坑
+> 每个技术选型都有隐含约束。如果架构师不主动挖掘并写入文档，下游（TDD/Review/测试）全部会默认"没问题"。
+
+**约束清单模板**:
+```markdown
+## 技术选型约束 — [技术名]
+- 并发限制: [如 SQLite 单 writer，必须 BEGIN IMMEDIATE]
+- 必要配置: [如 WAL + busy_timeout + isolation_level=None]
+- 已知坑: [如 aiosqlite 后台线程执行，asyncio.Lock 无效]
+- 测试要求: [如 必须有 2-3 个 async task 并发写入的测试用例]
+```
+
+**实际案例**（DEV-BUG-7，详见 COMMON-8）：架构讨论选 SQLite 时只考虑了"轻量、无需额外服务"，没有列出 BEGIN IMMEDIATE 等并发约束，导致全链路漏检。
