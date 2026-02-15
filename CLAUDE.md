@@ -9,7 +9,7 @@
 
 ### 角色定义
 详见 [docs/personas/roles.md](docs/personas/roles.md)
-- 🏗️ 架构师 / 📋 项目经理 / 💻 实施者 / ⚖️ 辩论者 / 📝 记录员
+- 🏗️ 架构师 / 📋 项目经理 / 💻 开发者 / ⚖️ 讨论专家 / 📝 记录员
 
 ### 功能规格 (`docs/specs/`)
 - [SPEC-001 聊天功能](docs/specs/SPEC-001-聊天功能/README.md) — 需求/设计/进度/讨论，详见目录索引
@@ -24,9 +24,10 @@
 - [模型选择策略](docs/runbooks/model-selection.md) — 子 Agent 调度时的模型选择参考
 - [分层进度管理指南](docs/runbooks/layered-progress-guide.md)
 - [试运行完整流程](docs/runbooks/trial-run-complete-workflow.md)
+- [Cat Café 经验参考](docs/runbooks/reference-catcafe-lessons.md) — 外部项目借鉴：元规则、交接五件套、P1/P2/P3 分级
 
 ### 工作流程 (`docs/workflows/`)
-- [多轮辩论流程](docs/workflows/debate-workflow.md)
+- [协作讨论流程](docs/workflows/debate-workflow.md)
 - [标准开发流程](docs/workflows/development-workflow.md)
 - [前后端联调流程](docs/workflows/integration-workflow.md)
 
@@ -62,11 +63,11 @@
 - **项目级通用** → 落盘到 `docs/discussions/YYYY-MM-DD-主题.md`
 - 摘要索引 → 同步更新 `docs/discussions.md`（按功能/通用分组）
 
-### 5. 辩论触发条件
-详见 [辩论流程](docs/workflows/debate-workflow.md)
+### 5. 讨论触发条件
+详见 [协作讨论流程](docs/workflows/debate-workflow.md)
 
-**必须辩论**：架构选型、设计模式、影响面>3文件的重构、≥2种可行方案的新功能、用户要求
-**不需要辩论**：Bug修复、单文件改动、文档更新、用户明确指示
+**必须讨论**：架构选型、设计模式、影响面>3文件的重构、≥2种可行方案的新功能、用户要求
+**不需要讨论**：Bug修复、单文件改动、文档更新、用户明确指示
 
 ---
 
@@ -76,7 +77,7 @@
 ```
 用户提出需求 → [架构师] 判断复杂度
   ├── 简单 → 直接实施
-  └── 复杂 → 三方辩论 → [PM] 拆解任务 → [实施者] 逐个实施
+  └── 复杂 → 协作讨论 → [PM] 拆解任务 → [开发者] 逐个实施
 每完成一个任务 → 📝 更新进度文件
 ```
 
@@ -101,6 +102,6 @@
 ## 🚀 快速参考
 
 - "开始新项目" → 架构师分析 + PM建任务
-- "辩论一下" → 启动三方辩论流程
+- "讨论一下" → 启动协作讨论流程
 - "目前进度" → 读取 claude-progress.txt + TaskList
 - "继续工作" → 读取进度 → 捡起下一个任务
