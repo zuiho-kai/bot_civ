@@ -1,129 +1,56 @@
-# Project Progress Log（项目总进展）
+# 项目进展
 
-> **项目经理级别**：只记录大里程碑、跨团队协作事件。
 > 细节进展 → `server/progress.md` / `web/progress.md`
-> 决策详情 → [docs/discussions.md](docs/discussions.md)
-> 变更历史 → [docs/changelog.md](docs/changelog.md)
 
----
+## 最近活动
+
+### 2026-02-16
+- M2 Phase 2 完成（记忆服务+发言扣费+定时任务）
+- 62 tests passed
+- 文档重构：README/ROADMAP/CONTRIBUTING 增强吸引力
+
+### 2026-02-15
+- M2 Phase 1 完成（向量存储+经济服务+用量追踪+频率控制）
+- MaiBot 竞品分析，纳入 3 项特性到 M2
+
+### 2026-02-14
+- M1.5 完成：OpenClaw Plugin 接入（TypeScript channel plugin）
+- Plugin 放置在 `openclaw-plugin/` 子目录（与 bot_civ 强耦合）
 
 ## 当前状态
 
-- **阶段**: M2 Phase 1 完成，Phase 2 待开始
-- **项目**: OpenClaw 社区（多 Agent 聊天群 + 页游社区）
+- **阶段**: M2 Phase 2 完成，Phase 3 待开始
 - **技术栈**: FastAPI + WebSocket | React + Vite | SQLite + LanceDB
-- **协作模式**: 混合模式（日常双终端，复杂联调用 Agent Team）
-- **代码仓库**: https://github.com/zuiho-kai/bot_civ
-- **部署环境**: 43.153.173.195:8000（server + Bot 运行中）
-- **下一步**: M2（Memory / Economy / Frontend 增强）
+- **仓库**: https://github.com/zuiho-kai/bot_civ
+- **部署**: 43.153.173.195:8000
 
----
+## M2 进度（15 任务，6 Phase）
 
-## 已完成基础设施
+**Phase 1 ✅**: LanceDB 向量存储 + 经济服务 + LLM 用量追踪 + 频率控制
+**Phase 2 ✅**: 记忆读写服务 + 发言扣费 + 每日发放定时任务
+**Phase 3 待开始**: 记忆注入上下文 + 对话提取记忆 + 悬赏 API
+**Phase 4**: Batch 推理优化
+**Phase 5**: 前端经济信息 + 悬赏页面
+**Phase 6**: 端到端验证
 
-- [x] 项目骨架（目录结构、FastAPI 入口、React 初始化）
-- [x] SQLite 数据模型 → `server/app/models/tables.py`
-- [x] API 接口契约 → `docs/api-contract.md`
-- [x] 功能规格（需求+设计+评审）→ `docs/specs/SPEC-001-聊天功能/README.md`
-- [x] 设计决策：Agent人格(自然语言+JSON) / 唤醒(@必唤+小模型+定时) / 经济(双货币) / 记忆(短期7天+长期+公共) / 悬赏(待定)
+详细任务拆解见 `docs/specs/SPEC-001-聊天功能/TDD-M2-记忆与经济.md`
 
----
+## 历史里程碑
 
-## 里程碑进度
+- M1 ✅: Agent CRUD + WebSocket 聊天 + 唤醒引擎 + LLM 集成
+- M1.5 ✅: OpenClaw Plugin 接入（TypeScript channel plugin，约 300 行代码）
+- M3 待定: 城市模拟 UI
 
-### M1 — 能跑起来（Agent 能聊天）✅ 完成
+## 项目组成
 
-- Agent CRUD API + WebSocket 聊天
-- 唤醒引擎（@必唤 + 小模型选人 + 定时触发）
-- LLM 集成（OpenRouter / DeepSeek / SiliconFlow 多供应商）
-- 前端 Discord 风格四栏布局
-- 22 项冒烟测试通过
+### 核心服务
+- **server/**: FastAPI 后端（Python）
+- **web/**: React 前端（TypeScript）
+- **openclaw-plugin/**: OpenClaw channel plugin（TypeScript）
 
-### M1.5 — Bot 接入协议 ✅ 完成
-
-- 双 WebSocket 端点：`/ws/human` + `/ws/bot/{agent_id}`
-- Bot token 认证（`oc_` 前缀）
-- 心跳机制（30s ping/pong）
-- Bot 在线时跳过服务端驱动，离线时 fallback
-- `since_id` 增量消息拉取
-- 11 项协议测试通过
-
-### M1.5-2 — OpenClaw 接入验证 ✅ 完成（2026-02-14）
-
-- 代码推送到 GitHub: https://github.com/zuiho-kai/bot_civ
-- Server 部署到 43.153.173.195:8000
-- 用 `openclaw agent --local` 让 OpenClaw 自主编写 Bot 客户端脚本（oc_bot.py）
-- OpenClaw 写的 Bot 成功通过 WebSocket 连接、接收消息、调 DeepSeek API 回复
-- 端到端验证通过：人类发消息 → Bot 收到 → 调 LLM → 回复广播
-
-### M1.5-3 — OpenClaw Plugin 架构决策 ✅ 完成（2026-02-14）
-
-- **决策**: OpenClaw botciv channel plugin 放在 bot_civ repo 子目录（方案A）
-- **理由**: 强耦合现实（依赖 WebSocket 协议）+ 零版本同步成本 + 单人项目特性
-- **目录**: `bot_civ/openclaw-plugin/`（6个文件，约300行 TypeScript）
+### OpenClaw Plugin 说明
+- **作用**: 让 OpenClaw 作为 bot_civ 的原生 channel 接入
+- **架构**: 6 个文件，约 300 行 TypeScript
 - **安装**: `openclaw plugins link /path/to/bot_civ/openclaw-plugin`
-- **详细讨论**: docs/discussions/2026-02-14-openclaw-plugin-architecture.md
-
-### 竞品分析：MaiBot (MaiCore)（2026-02-15）
-
-- 深度分析 MaiBot 0.12.2（单 Agent 仿生聊天框架）
-- 核心借鉴：三层仿生记忆（海马体概括 + ReAct 检索 + 梦境整理）
-- 用户审核确认 M2 纳入 3 项：R3 LLM 用量追踪、R5 频率控制自适应、R7 唤醒模型可配
-- M3 延后 5 项：话题级记忆、梦境整理、完整模型配置、LLM 起昵称、ReAct 检索
-- 详细分析：docs/runbooks/reference-maibot-analysis.md
-
-### M2 — 有记忆有经济（15 个任务，6 Phase）
-
-**实施排期（串行/并行分析）**：
-
-```
-Phase 1（基础设施，全部并行，无依赖）：
-  M2-1  LanceDB 向量存储层
-  M2-5  经济服务
-  M2-13 LLM 用量追踪（R3）
-  M2-14 频率控制自适应（R5）
-  M2-15 唤醒模型 .env 可配（R7）
-
-Phase 2（核心功能，组间并行，组内串行）：
-  M2-2  记忆读写服务         ← M2-1
-  M2-6  发言扣费集成         ← M2-5
-  M2-7  每日发放+额度重置    ← M2-5
-
-Phase 3（集成，组间并行，组内串行）：
-  M2-3  记忆注入Agent上下文  ← M2-2
-  M2-4  对话自动提取记忆     ← M2-2
-  M2-8  悬赏任务API          ← M2-5
-
-Phase 4（推理优化）：
-  M2-12 Batch推理优化        ← M2-3 + M2-6
-
-Phase 5（前端，等后端API）：
-  M2-9  经济信息展示         ← M2-5
-  M2-10 悬赏任务页面         ← M2-8
-
-Phase 6（验证）：
-  M2-11 端到端验证           ← 全部完成
-```
-
-**当前状态**: Phase 1 ✅ 完成（2026-02-15），Phase 2 待开始
-
-**Phase 1 完成记录（2026-02-15）**：
-- M2-1  LanceDB 向量存储层 ✅ — `server/app/services/vector_store.py`（bge-small-zh-v1.5, 512维）
-- M2-5  经济服务 ✅ — `server/app/services/economy_service.py`（check/deduct/transfer/balance）
-- M2-13 LLM 用量追踪 ✅ — `LLMUsage` 模型 + `agent_runner.py` 记录
-- M2-14 频率控制自适应 ✅ — `wakeup_service.py` 连续无回应计数器
-- M2-15 唤醒模型 .env 可配 — 未实施（遗留）
-- 测试验收：50 tests passed（`server/tests/test_economy.py` 18个 + `test_wakeup_frequency.py` 6个 + `test_llm_usage.py` 4个 + 既有11个）
-
-### M3 — 城市模拟 UI
-- [ ] 城市工作系统（岗位、打卡、奖励）
-- [ ] 完整前端 UI
-
----
-
-## 待执行
-
-### 试运行：完整开发流程验证
-- **任务文档**: docs/runbooks/trial-run-complete-workflow.md
-- **目标**: 验证四方协作流程可行性
-- **状态**: 待开始
+- **设计决策**: 放在 bot_civ repo 子目录（与 WebSocket 协议强耦合，零版本同步成本）
+- **详细讨论**: `docs/discussions/2026-02-14-openclaw-plugin-architecture.md`
