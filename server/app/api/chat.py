@@ -11,10 +11,14 @@ from ..core import get_db, async_session
 from ..models import Message, Agent
 from ..services.wakeup_service import WakeupService
 from ..services.agent_runner import runner_manager
+from ..services.economy_service import economy_service
 from .schemas import MessageOut
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["chat"])
+
+# prevent fire-and-forget tasks from being GC'd
+_background_tasks: set[asyncio.Task] = set()
 
 # 连接池：人类支持多标签页，Bot 同一 agent_id 只允许一个
 human_connections: dict[int, list[WebSocket]] = {}  # {0: [ws1, ws2, ...]}
@@ -82,21 +86,20 @@ async def broadcast_system_event(event: str, agent_id: int, agent_name: str):
     })
 
 
-async def send_agent_message(agent_id: int, agent_name: str, content: str):
+async def send_agent_message(agent_id: int, agent_name: str, content: str, db: AsyncSession):
     """Agent 发送消息（持久化 + 广播）"""
-    async with async_session() as db:
-        name_map = await get_agent_name_map(db)
-        mentions = parse_mentions(content, name_map)
-        msg = Message(
-            agent_id=agent_id,
-            sender_type="agent",
-            message_type="chat",
-            content=content,
-            mentions=mentions,
-        )
-        db.add(msg)
-        await db.commit()
-        await db.refresh(msg)
+    name_map = await get_agent_name_map(db)
+    mentions = parse_mentions(content, name_map)
+    msg = Message(
+        agent_id=agent_id,
+        sender_type="agent",
+        message_type="chat",
+        content=content,
+        mentions=mentions,
+    )
+    db.add(msg)
+    await db.commit()
+    await db.refresh(msg)
 
     await broadcast({
         "type": "new_message",
@@ -117,9 +120,15 @@ async def send_agent_message(agent_id: int, agent_name: str, content: str):
 async def handle_wakeup(message: Message):
     """异步唤醒处理：选人 → 如果 Bot 在线则跳过，否则 fallback 生成回复"""
     try:
+        # 第一阶段：读取数据（短时间持有数据库会话）
+        wake_list = []
+        agents_to_reply = []
+
         async with async_session() as db:
             online_ids = set(human_connections.keys()) | set(bot_connections.keys())
+            print(f"[WAKEUP] online_ids={online_ids}", flush=True)
             wake_list = await wakeup_service.process(message, online_ids, db)
+            print(f"[WAKEUP] wake_list={wake_list}", flush=True)
 
             if not wake_list:
                 return
@@ -133,7 +142,16 @@ async def handle_wakeup(message: Message):
                 # Bot 不在线 → fallback 到服务端驱动
                 agent = await db.get(Agent, agent_id)
                 if not agent:
+                    print(f"[WAKEUP] agent {agent_id} not found in db", flush=True)
                     continue
+
+                # 经济预检查
+                can_speak = await economy_service.check_quota(agent_id, "chat", db)
+                if not can_speak.allowed:
+                    print(f"[WAKEUP] agent {agent_id} quota denied: {can_speak.reason}", flush=True)
+                    continue
+
+                print(f"[WAKEUP] generating reply for agent {agent_id} ({agent.name})", flush=True)
 
                 # 构建聊天历史给 runner
                 recent = await db.execute(
@@ -150,15 +168,37 @@ async def handle_wakeup(message: Message):
                     for m in reversed(recent.scalars().all())
                 ]
 
-                runner = runner_manager.get_or_create(
-                    agent.id, agent.name, agent.persona, agent.model
-                )
-                reply = await runner.generate_reply(history)
-                if reply:
-                    await send_agent_message(agent.id, agent.name, reply)
+                agents_to_reply.append({
+                    "agent_id": agent.id,
+                    "agent_name": agent.name,
+                    "persona": agent.persona,
+                    "model": agent.model,
+                    "history": history,
+                })
+        # 数据库会话已关闭，释放锁
+
+        # 第二阶段：LLM 调用（无数据库会话，不持有锁）
+        for agent_info in agents_to_reply:
+            runner = runner_manager.get_or_create(
+                agent_info["agent_id"],
+                agent_info["agent_name"],
+                agent_info["persona"],
+                agent_info["model"]
+            )
+            reply = await runner.generate_reply(agent_info["history"])
+            logger.info("Agent %s generated reply", agent_info["agent_name"])
+
+            # 第三阶段：保存结果（创建新的数据库会话）
+            if reply:
+                async with async_session() as db:
+                    await send_agent_message(agent_info["agent_id"], agent_info["agent_name"], reply, db)
+                    await economy_service.deduct_quota(agent_info["agent_id"], db)
+                    await db.commit()
+                # 数据库会话已关闭
 
     except Exception as e:
-        logger.error("Wakeup handling failed: %s", e)
+        print(f"[WAKEUP] ERROR: {e}", flush=True)
+        logger.error("Wakeup handling failed: %s", e, exc_info=True)
 
 
 @router.get("/messages", response_model=list[MessageOut])
@@ -320,7 +360,9 @@ async def websocket_endpoint(
             })
 
             # 异步触发唤醒（不阻塞广播）
-            asyncio.create_task(handle_wakeup(msg))
+            task = asyncio.create_task(handle_wakeup(msg))
+            _background_tasks.add(task)
+            task.add_done_callback(_background_tasks.discard)
 
     except WebSocketDisconnect:
         pass

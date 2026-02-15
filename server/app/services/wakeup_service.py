@@ -34,26 +34,36 @@ async def call_wakeup_model(prompt: str) -> str:
     """调用小模型进行唤醒选人"""
     resolved = resolve_model("wakeup-model")
     if not resolved:
-        logger.warning("Wakeup model not configured or no API key, falling back to NONE")
+        print("[WAKEUP] model not configured, returning NONE", flush=True)
         return "NONE"
 
     base_url, api_key, model_id = resolved
 
     try:
-        async with httpx.AsyncClient(timeout=10) as client:
+        async with httpx.AsyncClient(timeout=15) as client:
             response = await client.post(
                 f"{base_url}/chat/completions",
                 headers={"Authorization": f"Bearer {api_key}"},
                 json={
                     "model": model_id,
                     "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": 50,
+                    "max_tokens": 800,
                 },
             )
             response.raise_for_status()
-            return response.json()["choices"][0]["message"]["content"].strip()
+            data = response.json()
+            msg = data["choices"][0]["message"]
+            content = (msg.get("content") or "").strip()
+            # 某些推理模型把答案放在 reasoning 末尾，content 为空
+            if not content and msg.get("reasoning"):
+                # 取 reasoning 最后一行作为答案
+                lines = msg["reasoning"].strip().splitlines()
+                content = lines[-1].strip() if lines else ""
+            print(f"[WAKEUP] model returned: {content!r}", flush=True)
+            return content
     except Exception as e:
-        logger.error("Wakeup model call failed: %s", e)
+        print(f"[WAKEUP] model call failed: {e}", flush=True)
+        logger.error("Wakeup model call failed: %s", e, exc_info=True)
         return "NONE"
 
 
@@ -63,7 +73,7 @@ class WakeupService:
 
     def record_response(self, agent_id: int) -> None:
         """有人回应时重置计数器"""
-        self._no_response_count[agent_id] = 0
+        self._no_response_count.pop(agent_id, None)
 
     def record_no_response(self, agent_id: int) -> None:
         """无人回应时计数器+1"""
@@ -76,6 +86,7 @@ class WakeupService:
         处理消息，返回需要唤醒的 agent_id 列表。
         不包含发送者自身，不包含 Human Agent (id=0)。
         """
+        print(f"[WAKEUP:process] sender_type={message.sender_type!r} agent_id={message.agent_id} content={message.content[:50]!r}", flush=True)
         # 频率控制：人类说话 → 重置所有 agent 计数
         if message.sender_type == "human":
             for aid in list(self._no_response_count):
@@ -112,6 +123,7 @@ class WakeupService:
     ) -> int | None:
         """小模型选人：人类消息时选择最合适的回复者"""
         candidates = await self._get_candidates(online_agent_ids, message.agent_id, db)
+        print(f"[WAKEUP:select] candidates={[(c.id, c.name) for c in candidates]}", flush=True)
         if not candidates:
             return None
 
@@ -132,7 +144,9 @@ class WakeupService:
             new_message=message.content[:200],
         )
 
+        print(f"[WAKEUP:select] calling wakeup model...", flush=True)
         result = await call_wakeup_model(prompt)
+        print(f"[WAKEUP:select] model result={result!r}", flush=True)
         return self._resolve_name(result, candidates)
 
     async def _maybe_trigger(
@@ -199,20 +213,15 @@ class WakeupService:
     async def _get_candidates(
         self, online_agent_ids: set[int], exclude_id: int, db: AsyncSession
     ) -> list[Agent]:
-        """获取候选 Agent（在线、非发送者、非 Human）"""
-        if not online_agent_ids:
-            return []
-        candidate_ids = [
-            aid for aid in online_agent_ids
-            if aid != exclude_id and aid != 0
-            and self._no_response_count.get(aid, 0) < 5
-        ]
-        if not candidate_ids:
-            return []
+        """获取候选 Agent（所有非 Human Agent，不限于在线）"""
         result = await db.execute(
-            select(Agent).where(Agent.id.in_(candidate_ids))
+            select(Agent).where(Agent.id != 0, Agent.id != exclude_id)
         )
-        return list(result.scalars().all())
+        all_agents = list(result.scalars().all())
+        return [
+            a for a in all_agents
+            if self._no_response_count.get(a.id, 0) < 5
+        ]
 
     async def _get_recent_messages(
         self, db: AsyncSession, limit: int = 10

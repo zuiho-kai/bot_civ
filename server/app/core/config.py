@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     siliconflow_auth_token: str = ""
     siliconflow_base_url: str = "https://api.siliconflow.cn/v1"
 
+    # 向量存储 / Embedding 模型
+    embedding_model_path: str = "E:/bge-small-zh-v1.5"
+
     # Agent 默认配置
     default_speak_interval: int = 60  # 默认发言间隔（秒）
     max_agents: int = 20

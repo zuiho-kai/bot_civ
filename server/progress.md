@@ -7,10 +7,10 @@
 
 ## 当前状态
 
-- **当前任务**: M1 #1 Agent CRUD 完善 + WebSocket 聊天 — 基本完成
-- **最近完成**: Phase 1 全部后端改动（数据模型扩展、CRUD 补全、WebSocket 协议升级、冒烟测试通过）
-- **待办优先级**: M1 #2 唤醒/意图识别规则引擎
-- **阻塞问题**: 无
+- **当前任务**: M2-8 悬赏任务API — 进行中（后端终端2认领）
+- **最近完成**: M2 Phase 1 + Phase 2 全部完成
+- **待办优先级**: M2-8 悬赏任务API → M2-3/M2-4（等另一终端修完 Phase 1+2 验证问题）
+- **阻塞问题**: 另一终端正在修 Phase 1+2 验证问题，M2-3/M2-4 暂时不能开始
 
 ---
 
@@ -52,6 +52,10 @@
 - [ ] WebSocket 断线重连 / 心跳机制
 - [ ] GET /api/messages 增加 since_id 增量拉取（Phase 2）
 - [ ] agent_typing 系统事件（Phase 2）
+
+## 遗留问题
+
+- [ ] **M2-1 向量搜索降级开关**: 如果 LanceDB 或 embedding 模型未安装/配置错误，记忆检索应 fallback 到 ReAct（关键词/规则匹配），不走向量搜索。配置缺失时启动报 warning，配置错误（路径无效等）时报 error。需要在 `vector_store.py` 和 `config.py` 加开关字段（如 `VECTOR_SEARCH_ENABLED=true`）。
 
 ---
 

@@ -93,7 +93,10 @@ async def test_lazy_daily_reset(svc, db):
 @pytest.mark.asyncio
 async def test_deduct_within_free_quota(svc, db):
     await _make_agent(db, id=1, credits=100, daily_free_quota=10, quota_used_today=3)
-    await svc.deduct_quota(1, db)
+    result = await svc.deduct_quota(1, db)
+    await db.commit()
+    assert result is True
+    db.expire_all()
     agent = await db.get(Agent, 1)
     assert agent.quota_used_today == 4
     assert agent.credits == 100  # credits untouched
@@ -102,20 +105,24 @@ async def test_deduct_within_free_quota(svc, db):
 @pytest.mark.asyncio
 async def test_deduct_beyond_free_quota(svc, db):
     await _make_agent(db, id=1, credits=50, daily_free_quota=10, quota_used_today=10)
-    await svc.deduct_quota(1, db)
+    result = await svc.deduct_quota(1, db)
+    await db.commit()
+    assert result is True
+    db.expire_all()
     agent = await db.get(Agent, 1)
     assert agent.credits == 49
 
 
 @pytest.mark.asyncio
 async def test_deduct_human_noop(svc, db):
-    # Should not raise
-    await svc.deduct_quota(HUMAN_ID, db)
+    result = await svc.deduct_quota(HUMAN_ID, db)
+    assert result is True
 
 
 @pytest.mark.asyncio
 async def test_deduct_nonexistent_agent_noop(svc, db):
-    await svc.deduct_quota(999, db)
+    result = await svc.deduct_quota(999, db)
+    assert result is False
 
 
 # --- transfer_credits ---

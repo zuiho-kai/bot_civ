@@ -14,6 +14,9 @@ from ..models.tables import LLMUsage
 
 logger = logging.getLogger(__name__)
 
+# prevent fire-and-forget tasks from being GC'd before completion
+_background_tasks: set[asyncio.Task] = set()
+
 
 async def _record_usage(model: str, agent_id: int, usage, latency_ms: int):
     """异步写入 LLM 用量记录，不阻塞主流程"""
@@ -30,7 +33,7 @@ async def _record_usage(model: str, agent_id: int, usage, latency_ms: int):
             session.add(record)
             await session.commit()
     except Exception as e:
-        logger.warning("Failed to record LLM usage: %s", e)
+        logger.error("Failed to record LLM usage: %s", e, exc_info=True)
 
 
 SYSTEM_PROMPT_TEMPLATE = """你是 {name}，一个聊天群里的成员。
@@ -94,14 +97,29 @@ class AgentRunner:
             response = await client.chat.completions.create(
                 model=model_id,
                 messages=messages,
-                max_tokens=200,
+                max_tokens=800,
             )
             latency_ms = int((time.time() - start) * 1000)
             if response.usage:
-                asyncio.create_task(_record_usage(
+                task = asyncio.create_task(_record_usage(
                     model_id, self.agent_id, response.usage, latency_ms
                 ))
+                _background_tasks.add(task)
+                task.add_done_callback(_background_tasks.discard)
             reply = response.choices[0].message.content
+            # 某些推理模型把回复放在 reasoning 字段
+            if not reply:
+                msg_data = response.choices[0].message
+                reasoning = getattr(msg_data, 'reasoning', None) or getattr(msg_data, 'reasoning_content', None)
+                if reasoning:
+                    logger.warning("Agent %s: content empty, falling back to reasoning tail", self.name)
+                    # 取 reasoning 最后一段作为回复
+                    lines = reasoning.strip().splitlines()
+                    for line in reversed(lines):
+                        if line.strip():
+                            reply = line.strip()
+                            break
+            logger.info("Agent %s generated reply: %s", self.name, reply[:100] if reply else None)
             if reply:
                 reply = reply.strip()
                 self.context.append({"name": self.name, "content": reply})

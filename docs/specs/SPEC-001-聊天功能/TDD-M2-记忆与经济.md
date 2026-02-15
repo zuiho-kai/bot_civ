@@ -117,6 +117,26 @@ def delete_memory(memory_id: int):
     table.delete(f"memory_id = {memory_id}")
 ```
 
+### 2.1.1 设计备注：向量检索 vs LLM 检索
+
+> **讨论日期**: 2026-02-15
+> **参考**: MaiBot 竞品分析 (`docs/runbooks/reference-maibot-analysis.md` §3.2)
+
+MaiBot 不使用向量数据库，记忆检索完全靠 LLM ReAct Agent 多轮推理（关键词 SQL 查询 + LLM 语义理解）。对比：
+
+| | 我们（LanceDB + sentence-transformers） | MaiBot（纯 LLM ReAct） |
+|---|---|---|
+| embedding | 本地 bge-small-zh-v1.5，免费 | 不需要 |
+| 每次检索成本 | 0（本地向量计算） | 1-5 次 LLM 调用 |
+| 检索质量 | 中（向量近似匹配） | 高（LLM 理解语义 + 多轮推理） |
+| 适合场景 | 高频批量（定时唤醒 5-20 Agent） | 低频精准（单 Bot） |
+
+**当前决策**：M2 阶段全部使用向量检索，成本可控。
+
+**M3 混合方案预留**：对于高价值场景（@必唤、悬赏任务），可以在向量检索基础上追加一轮 LLM 精排/补充检索，提升召回质量。定时唤醒等批量场景仍用纯向量检索。此方案不影响 M2 接口设计，`MemoryService.search()` 未来可内部切换策略而不改调用方。
+
+---
+
 ### 2.2 记忆读写服务 (M2-2)
 
 **文件**: `app/services/memory_service.py`

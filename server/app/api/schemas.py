@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 from pydantic import BaseModel, field_validator
 from typing import Optional
 
@@ -81,3 +82,42 @@ class WsChatMessage(BaseModel):
     type: str = "chat_message"
     content: str
     message_type: str = "chat"  # chat / work
+
+
+# --- Bounty ---
+class BountyCreate(BaseModel):
+    title: str
+    description: str = ""
+    reward: int
+
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("Bounty title cannot be empty")
+        if len(v) > 128:
+            raise ValueError("Bounty title must be 128 characters or less")
+        return v
+
+    @field_validator("reward")
+    @classmethod
+    def reward_must_be_positive(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError("reward must be greater than 0")
+        if v > 10000:
+            raise ValueError("reward must be 10000 or less")
+        return v
+
+
+class BountyOut(BaseModel):
+    model_config = {"from_attributes": True}
+
+    id: int
+    title: str
+    description: str
+    reward: int
+    status: str
+    claimed_by: Optional[int] = None
+    created_at: datetime
+    completed_at: Optional[datetime] = None

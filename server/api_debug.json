@@ -1,0 +1,49 @@
+{
+  "id": "gen-1771164978-y7zLJDCwsl1oP8YUYUEc",
+  "provider": "StepFun",
+  "model": "stepfun/step-3.5-flash:free",
+  "object": "chat.completion",
+  "created": 1771164978,
+  "choices": [
+    {
+      "logprobs": null,
+      "finish_reason": "stop",
+      "native_finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Hi there! 👋 How can I assist you today?",
+        "refusal": null,
+        "reasoning": "Hmm, the user simply said \"say hi.\" That's a very basic request, likely testing if I'm responsive or just being casual. \n\nI should respond with a friendly and warm greeting to match the simplicity of the query. No need to overcomplicate it—just a straightforward \"Hi\" with maybe an emoji to keep it approachable. \n\nSince there's no context or deeper need here, I'll keep it light and open-ended by asking how I can help, inviting further interaction if they want.",
+        "reasoning_details": [
+          {
+            "format": "unknown",
+            "index": 0,
+            "type": "reasoning.text",
+            "text": "Hmm, the user simply said \"say hi.\" That's a very basic request, likely testing if I'm responsive or just being casual. \n\nI should respond with a friendly and warm greeting to match the simplicity of the query. No need to overcomplicate it—just a straightforward \"Hi\" with maybe an emoji to keep it approachable. \n\nSince there's no context or deeper need here, I'll keep it light and open-ended by asking how I can help, inviting further interaction if they want."
+          }
+        ]
+      }
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 14,
+    "completion_tokens": 120,
+    "total_tokens": 134,
+    "cost": 0,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0,
+      "upstream_inference_prompt_cost": 0,
+      "upstream_inference_completions_cost": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 120,
+      "audio_tokens": 0
+    }
+  }
+}

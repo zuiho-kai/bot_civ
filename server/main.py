@@ -1,3 +1,5 @@
+import asyncio
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,8 +8,9 @@ from app.core import init_db
 from app.core.config import settings
 from app.core.database import async_session
 from app.models import Agent
-from app.api import agents_router, chat_router, dev_router
+from app.api import agents_router, chat_router, dev_router, bounties_router
 from app.services.vector_store import init_vector_store
+from app.services.scheduler import scheduler_loop
 
 
 async def ensure_human_agent():
@@ -24,7 +27,13 @@ async def lifespan(app: FastAPI):
     await init_db()
     await ensure_human_agent()
     await init_vector_store(settings.lancedb_path)
+    scheduler_task = asyncio.create_task(scheduler_loop())
     yield
+    scheduler_task.cancel()
+    try:
+        await scheduler_task
+    except asyncio.CancelledError:
+        pass
 
 
 app = FastAPI(title="OpenClaw Community", version="0.1.0", lifespan=lifespan)
@@ -40,6 +49,7 @@ app.add_middleware(
 app.include_router(agents_router, prefix="/api")
 app.include_router(chat_router, prefix="/api")
 app.include_router(dev_router, prefix="/api")
+app.include_router(bounties_router, prefix="/api")
 
 
 @app.get("/api/health")

@@ -26,6 +26,7 @@
 - 文档防丢失：对话是临时的，文件是持久的
 - OpenClaw Plugin 放在 bot_civ repo 子目录（方案A）
 - 保持 OpenClaw 自主 Agent 架构，不采用 CLI 子进程模式（含常驻 CLI 也否决）
+- 文档改进：添加截图/架构图/对比表格，新增代码导航和进度文件说明
 
 ---
 
@@ -51,3 +52,5 @@
 | 2026-02-14 | OpenClaw Plugin 代码放置方案 | 协作讨论 | 方案A（放在 bot_civ repo 子目录） | [查看](discussions/2026-02-14-openclaw-plugin-architecture.md) |
 | 2026-02-15 | Cat Café CLI 子进程 vs OpenClaw 自主 Agent | 架构对比 | 保持 OpenClaw 架构，CLI 常驻也否决 | [查看](discussions/2026-02-15-catcafe-vs-openclaw-architecture.md) |
 | 2026-02-15 | 竞品分析：MaiBot (MaiCore) | 竞品研究 | M2 纳入 R3/R5/R7，M3 延后 5 项，详见分析文档 | [查看](runbooks/reference-maibot-analysis.md) |
+| 2026-02-15 | 进度索引优化 | 协作讨论 | claude-progress.txt 顶部增加"最近7天活动"章节（手动维护，可选自动化） | [查看](discussions/2026-02-15-progress-index-optimization.md) |
+| 2026-02-15 | 文档改进（吸引力+清晰度） | 项目优化 | 添加截图/架构图/对比表格，新增 CODE_MAP.md 和 PROGRESS_FILES.md | [查看](discussions/2026-02-15-documentation-improvement.md) |

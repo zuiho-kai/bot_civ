@@ -14,7 +14,7 @@ def svc():
 def test_record_response_resets_count(svc):
     svc._no_response_count[1] = 3
     svc.record_response(1)
-    assert svc._no_response_count[1] == 0
+    assert svc._no_response_count.get(1, 0) == 0
 
 
 def test_record_no_response_increments(svc):
@@ -92,5 +92,5 @@ async def test_human_message_resets_all_counts(svc, db):
     # The important thing is that counts get reset
     await svc.process(msg, online_agent_ids={1, 2}, db=db)
 
-    assert svc._no_response_count[1] == 0
-    assert svc._no_response_count[2] == 0
+    assert svc._no_response_count.get(1, 0) == 0
+    assert svc._no_response_count.get(2, 0) == 0

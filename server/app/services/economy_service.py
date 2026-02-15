@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import date
 
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import Agent
@@ -41,19 +42,30 @@ class EconomyService:
             return CanSpeakResult(True, "credits available")
         return CanSpeakResult(False, "no quota or credits left")
 
-    async def deduct_quota(self, agent_id: int, db: AsyncSession) -> None:
+    async def deduct_quota(self, agent_id: int, db: AsyncSession) -> bool:
+        """Atomic deduct: tries free quota first, then credits. Returns True if deducted."""
         if agent_id == HUMAN_ID:
-            return
-        agent = await db.get(Agent, agent_id)
-        if agent is None:
-            return
+            return True
 
-        await self._reset_if_needed(agent)
+        # Try atomic free quota increment
+        result = await db.execute(
+            update(Agent)
+            .where(
+                Agent.id == agent_id,
+                Agent.quota_used_today < Agent.daily_free_quota,
+            )
+            .values(quota_used_today=Agent.quota_used_today + 1)
+        )
+        if result.rowcount > 0:
+            return True
 
-        if agent.quota_used_today < agent.daily_free_quota:
-            agent.quota_used_today += 1
-        else:
-            agent.credits = max(agent.credits - 1, 0)
+        # Free quota exhausted — try atomic credit deduction
+        result = await db.execute(
+            update(Agent)
+            .where(Agent.id == agent_id, Agent.credits > 0)
+            .values(credits=Agent.credits - 1)
+        )
+        return result.rowcount > 0
 
     async def transfer_credits(
         self, from_id: int, to_id: int, amount: int, db: AsyncSession

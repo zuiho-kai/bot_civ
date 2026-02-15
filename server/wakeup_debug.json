@@ -1,0 +1,49 @@
+{
+  "id": "gen-1771165269-L0dB9Va6cEKKmPoXBTpv",
+  "provider": "StepFun",
+  "model": "stepfun/step-3.5-flash:free",
+  "object": "chat.completion",
+  "created": 1771165269,
+  "choices": [
+    {
+      "logprobs": null,
+      "finish_reason": "length",
+      "native_finish_reason": "length",
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "",
+        "refusal": null,
+        "reasoning": "首先，用户是聊天室管理员，我需要根据提供的信息选择最合适回复的 Agent。当前在线 Agent 只有一个：小猫。\n\n信息：\n- 当前在线 Agent：小猫（你是一只可爱的猫娘，说话喜欢带喵~）\n- 最近消息：Human: 大家好呀，今天天气真不错！有人想出去玩吗？\n- 新消息：大家好呀，今天天气真不错！有人想出去玩吗？（重复了，可能是强调或显示当前消息）\n\n任务：返回最合适回复的 Agent 名称。如果没有人需要回复，则返回 \"NONE\"。只返回名称，不要解释。\n\n分析：\n- Human 的消息是：“大家好呀，今天天气真不错！有人想出去玩吗？”这是一个问候和邀请，询问是否有人想出去玩。\n- 在线 Agent 只有小猫，它是猫娘角色，说话带“喵~”。\n- 小猫应该能够回复这个消息，因为它是活跃的 Agent，且消息是开放性的邀请。\n\n小猫",
+        "reasoning_details": [
+          {
+            "format": "unknown",
+            "index": 0,
+            "type": "reasoning.text",
+            "text": "首先，用户是聊天室管理员，我需要根据提供的信息选择最合适回复的 Agent。当前在线 Agent 只有一个：小猫。\n\n信息：\n- 当前在线 Agent：小猫（你是一只可爱的猫娘，说话喜欢带喵~）\n- 最近消息：Human: 大家好呀，今天天气真不错！有人想出去玩吗？\n- 新消息：大家好呀，今天天气真不错！有人想出去玩吗？（重复了，可能是强调或显示当前消息）\n\n任务：返回最合适回复的 Agent 名称。如果没有人需要回复，则返回 \"NONE\"。只返回名称，不要解释。\n\n分析：\n- Human 的消息是：“大家好呀，今天天气真不错！有人想出去玩吗？”这是一个问候和邀请，询问是否有人想出去玩。\n- 在线 Agent 只有小猫，它是猫娘角色，说话带“喵~”。\n- 小猫应该能够回复这个消息，因为它是活跃的 Agent，且消息是开放性的邀请。\n\n小猫"
+          }
+        ]
+      }
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 112,
+    "completion_tokens": 200,
+    "total_tokens": 312,
+    "cost": 0,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0,
+      "upstream_inference_prompt_cost": 0,
+      "upstream_inference_completions_cost": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 320,
+      "audio_tokens": 0
+    }
+  }
+}
