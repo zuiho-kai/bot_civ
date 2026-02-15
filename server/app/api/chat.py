@@ -17,6 +17,9 @@ from .schemas import MessageOut
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["chat"])
 
+# 全局数据库写入锁，序列化所有写入操作避免 SQLite 锁定
+_db_write_lock = asyncio.Lock()
+
 # prevent fire-and-forget tasks from being GC'd
 _background_tasks: set[asyncio.Task] = set()
 
@@ -87,7 +90,7 @@ async def broadcast_system_event(event: str, agent_id: int, agent_name: str):
 
 
 async def send_agent_message(agent_id: int, agent_name: str, content: str, db: AsyncSession):
-    """Agent 发送消息（持久化 + 广播）"""
+    """Agent 发送消息（持久化 + 广播），调用方负责 commit"""
     name_map = await get_agent_name_map(db)
     mentions = parse_mentions(content, name_map)
     msg = Message(
@@ -98,7 +101,7 @@ async def send_agent_message(agent_id: int, agent_name: str, content: str, db: A
         mentions=mentions,
     )
     db.add(msg)
-    await db.commit()
+    await db.flush()
     await db.refresh(msg)
 
     await broadcast({
@@ -124,7 +127,8 @@ async def handle_wakeup(message: Message):
         wake_list = []
         agents_to_reply = []
 
-        async with async_session() as db:
+        async with _db_write_lock:
+            async with async_session() as db:
             online_ids = set(human_connections.keys()) | set(bot_connections.keys())
             print(f"[WAKEUP] online_ids={online_ids}", flush=True)
             wake_list = await wakeup_service.process(message, online_ids, db)
@@ -190,11 +194,12 @@ async def handle_wakeup(message: Message):
 
             # 第三阶段：保存结果（创建新的数据库会话）
             if reply:
-                async with async_session() as db:
-                    await send_agent_message(agent_info["agent_id"], agent_info["agent_name"], reply, db)
-                    await economy_service.deduct_quota(agent_info["agent_id"], db)
-                    await db.commit()
-                # 数据库会话已关闭
+                async with _db_write_lock:
+                    async with async_session() as db:
+                        await send_agent_message(agent_info["agent_id"], agent_info["agent_name"], reply, db)
+                        await economy_service.deduct_quota(agent_info["agent_id"], db)
+                        await db.commit()
+                    # 数据库会话已关闭
 
     except Exception as e:
         print(f"[WAKEUP] ERROR: {e}", flush=True)
@@ -328,21 +333,22 @@ async def websocket_endpoint(
                 message_type = "work"
 
             # 解析 @提及
-            async with async_session() as db:
-                name_map = await get_agent_name_map(db)
-                mentions = parse_mentions(content, name_map)
+            async with _db_write_lock:
+                async with async_session() as db:
+                    name_map = await get_agent_name_map(db)
+                    mentions = parse_mentions(content, name_map)
 
-                # 持久化消息
-                msg = Message(
-                    agent_id=agent_id,
-                    sender_type=sender_type,
-                    message_type=message_type,
-                    content=content,
-                    mentions=mentions,
-                )
-                db.add(msg)
-                await db.commit()
-                await db.refresh(msg)
+                    # 持久化消息
+                    msg = Message(
+                        agent_id=agent_id,
+                        sender_type=sender_type,
+                        message_type=message_type,
+                        content=content,
+                        mentions=mentions,
+                    )
+                    db.add(msg)
+                    await db.commit()
+                    await db.refresh(msg)
 
             # 广播新消息
             await broadcast({

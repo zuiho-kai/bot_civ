@@ -27,14 +27,14 @@
 
 ## 已尝试的方案（均失败）
 
-### 方案 1: 增加 timeout 参数
+### 方案 1: 增加 timeout 参数 ❌
 ```python
 connect_args={"timeout": 30, "check_same_thread": False}
 ```
 - **结果**: 失败，还是锁定
 - **原因**: timeout 只是等待时间，不解决并发写入冲突
 
-### 方案 2: 启用 WAL 模式
+### 方案 2: 启用 WAL 模式 ❌
 ```python
 PRAGMA journal_mode=WAL
 PRAGMA busy_timeout=30000
@@ -42,7 +42,7 @@ PRAGMA busy_timeout=30000
 - **结果**: 失败，还是锁定
 - **原因**: WAL 改善了读写并发，但多个写入者仍会冲突
 
-### 方案 3: 增加连接池配置
+### 方案 3: 增加连接池配置 ❌
 ```python
 pool_pre_ping=True,
 pool_size=20,
@@ -51,67 +51,44 @@ max_overflow=0,
 - **结果**: 失败，还是锁定
 - **原因**: 连接池复用可能加剧冲突
 
-### 方案 4: 禁用连接池 (NullPool)
+### 方案 4: 禁用连接池 (NullPool) ❌
 ```python
 poolclass=NullPool
 ```
 - **结果**: 失败，还是锁定
 - **原因**: 每次创建新连接也无法解决同时写入的问题
 
-### 方案 5: 修复 emoji 编码错误
+### 方案 5: 修复 emoji 编码错误 ✅
 ```python
 # 将 print() 改为 logger.info()
 ```
 - **结果**: 修复了编码问题，但数据库锁定依然存在
 
-## 正确的解决方案（待实施）
+### 方案 6: 分离数据库会话（第一次尝试）❌
+- **思路**: 在 `handle_wakeup` 中分三个阶段：读取 → LLM 调用 → 保存
+- **结果**: 失败，还是锁定
+- **原因**: `send_agent_message` 内部又创建了新的数据库会话，导致嵌套冲突
 
-### 方案 A: 分离数据库会话（推荐）
-**思路**: 在 LLM 调用前关闭数据库会话，调用完成后创建新会话保存结果
+### 方案 7: 修复 send_agent_message 嵌套会话 ❌
+- **修改**: 让 `send_agent_message` 接受 `db` 参数，不再内部创建会话
+- **结果**: 失败，还是锁定
+- **当前状态**: 23:35 - 还在调试中
 
-```python
-async def handle_wakeup(message: Message):
-    # 第一个会话：读取数据
-    async with async_session() as db:
-        # 查询历史、检查配额等
-        history = await get_history(db)
-        agent = await db.get(Agent, agent_id)
-        # 会话结束，释放锁
+## 当前思路（23:35）
 
-    # LLM 调用（无数据库会话）
-    reply = await runner.generate_reply(history)
+问题可能不只是 `handle_wakeup`，还有其他地方也在并发写入数据库：
 
-    # 第二个会话：保存结果
-    async with async_session() as db:
-        await send_agent_message(agent.id, agent.name, reply)
-        await economy_service.deduct_quota(agent_id, db)
-        await db.commit()
-```
+1. **WebSocket 主循环**：接收人类消息时写入数据库
+2. **handle_wakeup 异步任务**：保存 Agent 回复时写入数据库
+3. **心跳/其他后台任务**：可能也在写入
 
-**优点**:
-- LLM 调用期间不持有数据库锁
-- 简单直接，不改变架构
-
-**缺点**:
-- 需要重构 `handle_wakeup` 函数
-
-### 方案 B: 使用消息队列
-**思路**: LLM 调用和数据库写入放到后台任务队列
-
-**优点**: 彻底解耦
-**缺点**: 架构复杂度增加
-
-### 方案 C: 切换到 PostgreSQL
-**思路**: 换用支持真正并发的数据库
-
-**优点**: 根本解决并发问题
-**缺点**: 部署复杂度增加
+需要排查所有并发写入点。
 
 ## 下一步行动
 
-1. **立即实施方案 A**：重构 `handle_wakeup` 分离数据库会话
-2. 测试验证
-3. 如果还有问题，考虑方案 B 或 C
+1. 检查 WebSocket 消息处理是否也持有长时间会话
+2. 考虑使用全局锁或消息队列序列化所有数据库写入
+3. 如果还不行，考虑切换到 PostgreSQL
 
 ## 时间线
 
@@ -121,4 +98,6 @@ async def handle_wakeup(message: Message):
 - 23:15 - 尝试方案 3 (连接池)
 - 23:20 - 尝试方案 4 (NullPool)
 - 23:25 - 发现根本原因：LLM 调用期间持有数据库会话
-- 23:30 - 准备实施方案 A
+- 23:30 - 尝试方案 6 (分离会话)
+- 23:33 - 发现 send_agent_message 嵌套会话问题
+- 23:35 - 修复后还是锁定，继续排查
