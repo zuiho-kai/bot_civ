@@ -22,7 +22,7 @@
 - 会话即将结束时
 
 ### 错题本
-[error-book-recorder.md](../runbooks/error-book-recorder.md) — 讨论落盘、索引维护、信息去重
+[error-book-recorder.md](../runbooks/error-books/error-book-recorder.md) — 讨论落盘、索引维护、信息去重
 
 ### 记录模板
 

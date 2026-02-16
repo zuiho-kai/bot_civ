@@ -21,7 +21,7 @@
 - **安全测试**：XSS、SQL 注入、权限校验
 
 ### 错题本
-[error-book-qa.md](../runbooks/error-book-qa.md) — 测试设计、测试执行、Bug 报告
+[error-book-qa.md](../runbooks/error-books/error-book-qa.md) — 测试设计、测试执行、Bug 报告
 
 ### 触发词
 当用户提到"测试"、"质量"、"验证"、"QA"时自动激活

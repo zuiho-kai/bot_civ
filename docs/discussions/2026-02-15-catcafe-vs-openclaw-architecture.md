@@ -96,7 +96,7 @@ OpenClaw Agent（独立进程）
 
 ### 值得借鉴的点
 
-详见 [经验参考](../runbooks/reference-catcafe-lessons.md)
+详见 [经验参考](../runbooks/postmortems/reference-catcafe-lessons.md)
 
 ---
 

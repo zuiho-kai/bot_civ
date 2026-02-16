@@ -14,7 +14,7 @@
 - 用 Task 工具拉起子 Agent 执行具体工作
 
 ### 错题本
-[error-book-debate.md](../runbooks/error-book-debate.md) — 讨论流程、方案设计、决策记录
+[error-book-debate.md](../runbooks/error-books/error-book-debate.md) — 讨论流程、方案设计、决策记录
 
 ### 触发词
 当用户提到"架构"、"设计"、"选型"、"重构"时自动激活

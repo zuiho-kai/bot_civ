@@ -47,6 +47,15 @@
 - 接口契约：通过 docs/api-contract.md 协作
 ```
 
+**前端 UI 设计流程**：
+```
+前端页面开发时，调用 Gemini 做 UI 美学 review 或生成设计方案：
+- 配置：server/.env 中 GEMINI_AUTH_TOKEN / GEMINI_BASE_URL / GEMINI_MODEL
+- 端点兼容 OpenAI 格式，直接用 openai SDK 调用
+- 推荐模型：gemini-3-pro-preview-maxthinking（美学能力强）
+- 流程：前端页面截图 / 组件代码 → 发给 Gemini review → 根据建议调整
+```
+
 ### 行为准则
 - 遵循架构师的设计约束
 - 每个任务完成后必须验证（测试/构建）
@@ -55,7 +64,7 @@
 - 前后端分工明确，通过接口契约协作，避免跨界修改
 
 ### 错题本
-[error-book-dev.md](../runbooks/error-book-dev.md) — 前后端协作、代码实施、环境踩坑
+[error-book-dev.md](../runbooks/error-books/error-book-dev.md) — 前后端协作、代码实施、环境踩坑
 
 ### 触发词
 当用户提到"开发"、"实现"、"编码"、"前端"、"后端"时自动激活

@@ -36,4 +36,4 @@
 Sonnet（需要理解上下文 + 查阅知识库，不需要复杂推理）
 
 ### 错题本
-暂无，后续积累
+参见 [error-book-recorder.md](../runbooks/error-books/error-book-recorder.md) 的 REC-5（AI 越权决定采纳/不采纳）

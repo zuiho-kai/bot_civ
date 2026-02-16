@@ -7,14 +7,62 @@
 
 ## 当前状态
 
-- **当前任务**: M2-8 悬赏任务API — 进行中（后端终端2认领）
-- **最近完成**: M2 Phase 1 + Phase 2 全部完成
-- **待办优先级**: M2-8 悬赏任务API → M2-3/M2-4（等另一终端修完 Phase 1+2 验证问题）
-- **阻塞问题**: 另一终端正在修 Phase 1+2 验证问题，M2-3/M2-4 暂时不能开始
+- **当前任务**: M2 Phase 4 完成，进入验收
+- **最近完成**: M2 Phase 4（Batch 推理优化）
+- **待办优先级**: 无阻塞项，可进入下一阶段
+- **阻塞问题**: 无
 
 ---
 
 ## 进展日志
+
+### 2026-02-16 (续)
+
+#### M2 Phase 4 完成 — Batch 推理优化
+
+**改动内容**：
+
+1. **agent_runner.py**: `AgentRunnerManager.batch_generate()` — 按模型分组并发调用 LLM，每个协程独立 AsyncSession
+2. **wakeup_service.py**: `scheduled_trigger()` 返回 `list[int]`（多 Agent 唤醒），新增 `SCHEDULED_WAKEUP_PROMPT` + `_resolve_names`
+3. **scheduler.py**: 新增 `hourly_wakeup_loop()` — 每小时定时触发 batch 推理 + 错开广播
+4. **chat.py**: 新增 `delayed_send()` — 延迟发送 + 经济扣费 + 记忆提取
+5. **main.py**: lifespan 启动 hourly wakeup loop
+6. **config.py**: Settings 加 `extra="ignore"` 兼容 .env 额外字段
+
+**Code Review 修复**（1 轮 review，目标 ≤2 轮达成）：
+- P1-01/P1-05: batch_generate 改为每协程独立 AsyncSession（消除并发共享风险）
+- P1-04: 移除 scheduler.py 未使用的 send_agent_message 导入
+- P1-08: delayed_send 中 history 防御性拷贝
+- P1-10: 新增 3 个 delayed_send 单元测试
+- P2-06: 移除未使用的 import random
+
+**验证**: 106/106 测试全绿（92 原有 + 14 新增）
+
+**状态**: ✅ 完成
+
+---
+
+### 2026-02-16
+
+#### M2 Phase 3 完成 — 记忆注入上下文 + 对话提取记忆 + 悬赏API
+
+**改动内容**：
+
+1. **M2-3 记忆注入 Agent 上下文**: `agent_runner.py` generate_reply 新增 db 参数，调用 memory_service.search 检索 top-5 记忆注入 system prompt
+2. **M2-4 对话自动提取记忆**: `chat.py` 新增 `_extract_memory`，每 5 条回复触发对话摘要提取为短期记忆
+3. **M2-8 悬赏任务 API**: 此前已完成
+
+**附带修复**：
+- test_chat_economy.py mock 返回值修正
+- upsert_memory 死参数移除
+- broadcast 清理逻辑
+- print→logger 统一
+
+**验证**: 4 轮 code review 循环，P0/P1 归零，84/84 测试全绿
+
+**状态**: ✅ 完成
+
+---
 
 ### 2026-02-14
 
@@ -55,13 +103,13 @@
 
 ## 遗留问题
 
-- [ ] **M2-1 向量搜索降级开关**: 如果 LanceDB 或 embedding 模型未安装/配置错误，记忆检索应 fallback 到 ReAct（关键词/规则匹配），不走向量搜索。配置缺失时启动报 warning，配置错误（路径无效等）时报 error。需要在 `vector_store.py` 和 `config.py` 加开关字段（如 `VECTOR_SEARCH_ENABLED=true`）。
+- [ ] **M2-1 向量搜索降级开关**: 如果 embedding API 不可用（key 未配置/网络不通），记忆检索应 fallback 到关键词匹配，不走向量搜索。配置缺失时启动报 warning。需要在 `vector_store.py` 和 `config.py` 加开关字段（如 `VECTOR_SEARCH_ENABLED=true`）。
 
 ---
 
 ## 遇到的问题及解决
 
-详见 [错题本](../docs/runbooks/error-book.md)（#1 lifespan 不触发、#2 端口冲突、#3 Windows curl 编码）
+详见 [错题本](../docs/runbooks/error-books/error-book-dev.md)（#1 lifespan 不触发、#2 端口冲突、#3 Windows curl 编码）
 
 ---
 

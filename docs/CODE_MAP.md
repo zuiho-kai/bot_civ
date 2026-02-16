@@ -37,8 +37,8 @@
 |------|------|------|
 | 记忆服务 | `server/app/services/memory_service.py` | 记忆读写、搜索、升级 |
 | 记忆模型 | `server/app/models/memory.py` | SQLite 记忆表 |
-| 向量存储 | `server/app/services/vector_store.py` | LanceDB 向量操作 |
-| 语义搜索 | `vector_store.py:search()` | 基于向量相似度搜索 |
+| 向量存储 | `server/app/services/vector_store.py` | SQLite BLOB + NumPy cosine similarity |
+| 语义搜索 | `vector_store.py:search()` | NumPy 向量相似度搜索 |
 | 自动升级 | `memory_service.py:save_memory()` | 访问 5 次自动升级长期 |
 | 过期清理 | `scheduler.py:daily_memory_cleanup()` | 清理 7 天过期短期记忆 |
 
@@ -87,7 +87,7 @@
 |------|------|------|
 | 数据库配置 | `server/app/core/database.py` | SQLite 连接池 |
 | 数据模型 | `server/app/models/` | SQLAlchemy 模型 |
-| 向量数据库 | `server/app/services/vector_store.py` | LanceDB 初始化 |
+| 向量存储 | `server/app/services/vector_store.py` | SQLite BLOB + 硅基流动 bge-m3 |
 
 ### ⚙️ 配置
 
@@ -162,15 +162,40 @@
 1. memory_service.py:save_memory()
 2. SQLite: 保存结构化数据
 3. vector_store.py:add_memory()
-4. Embedding: bge-small-zh-v1.5 生成向量
-5. LanceDB: 保存向量数据
+4. 硅基流动 bge-m3 API 生成 embedding
+5. SQLite: 保存向量 BLOB
 
 检索:
 1. memory_service.py:search_memories()
 2. vector_store.py:search()
-3. LanceDB: 向量相似度搜索
+3. NumPy: cosine similarity 向量搜索
 4. SQLite: 补充结构化信息
 5. 返回: 个人记忆 + 公共记忆
+```
+
+---
+
+## 📚 文档目录结构
+
+### docs/runbooks/ — 运维手册与错题本
+
+```
+docs/runbooks/
+├── error-books/                    ← 角色错题本（每次对话按角色加载）
+│   ├── common-mistakes.md          ← 跨角色通用错误 + 索引
+│   ├── error-book-dev.md           ← 开发者
+│   ├── error-book-pm.md            ← 项目经理
+│   ├── error-book-qa.md            ← QA Lead
+│   ├── error-book-debate.md        ← 架构师 / 讨论专家
+│   └── error-book-recorder.md      ← 记录员
+├── postmortems/                    ← 详细复盘与参考材料（按需加载）
+│   ├── postmortem-dev-bug-*.md     ← Bug 详细复盘
+│   ├── reference-maibot-analysis.md
+│   └── reference-catcafe-lessons.md
+├── agent-team-management.md        ← 多 Agent 协作指南
+├── layered-progress-guide.md       ← 分层进度记录规则
+├── model-selection.md              ← 子 Agent 模型选择参考
+└── trial-run-complete-workflow.md   ← 完整工作流试运行
 ```
 
 ---

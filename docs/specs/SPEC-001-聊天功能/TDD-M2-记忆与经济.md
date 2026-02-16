@@ -120,7 +120,7 @@ def delete_memory(memory_id: int):
 ### 2.1.1 设计备注：向量检索 vs LLM 检索
 
 > **讨论日期**: 2026-02-15
-> **参考**: MaiBot 竞品分析 (`docs/runbooks/reference-maibot-analysis.md` §3.2)
+> **参考**: MaiBot 竞品分析 (`docs/runbooks/postmortems/reference-maibot-analysis.md` §3.2)
 
 MaiBot 不使用向量数据库，记忆检索完全靠 LLM ReAct Agent 多轮推理（关键词 SQL 查询 + LLM 语义理解）。对比：
 

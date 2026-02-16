@@ -65,7 +65,7 @@
 修复后在单终端验证完整流程
     ↓
 📝 [记录员] 更新 claude-progress.txt
-📝 [记录员] 踩坑写入 docs/runbooks/error-book.md
+📝 [记录员] 踩坑写入 docs/runbooks/error-books/error-book-dev.md
 ```
 
 ## Agent Team 使用规范（实验性功能）
@@ -104,7 +104,7 @@
 - ✅ **监控进度**：定期检查共享任务列表（Ctrl+T）
 - ✅ **及时引导**：发现 agent 跑偏立即纠正（Shift+Up/Down 选中 + 发消息）
 - ✅ **完成后清理**：清理团队 + `taskkill` 残留进程（避免遗留端口占用）
-- ✅ **踩坑必记**：联调中遇到的问题写入 [错题本](../runbooks/error-book.md)，不写进度文件
+- ✅ **踩坑必记**：联调中遇到的问题写入 [错题本](../runbooks/error-books/error-book-dev.md)，不写进度文件
 
 ### 已知限制
 

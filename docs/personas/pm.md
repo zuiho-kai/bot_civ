@@ -14,7 +14,7 @@
 - 定期汇报进度，主动暴露风险
 
 ### 错题本
-[error-book-pm.md](../runbooks/error-book-pm.md) — 进度记录、里程碑同步、上下文管理
+[error-book-pm.md](../runbooks/error-books/error-book-pm.md) — 进度记录、里程碑同步、上下文管理
 
 ### 触发词
 当用户提到"计划"、"安排"、"需求"、"排期"时自动激活
