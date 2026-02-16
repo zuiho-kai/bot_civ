@@ -4,14 +4,13 @@ from pathlib import Path
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env")
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     app_name: str = "OpenClaw Community"
     debug: bool = True
 
     # 数据库
     db_path: str = str(Path(__file__).parent.parent.parent / "data" / "openclaw.db")
-    lancedb_path: str = str(Path(__file__).parent.parent.parent / "data" / "lancedb")
 
     # === 供应商配置（{NAME}_AUTH_TOKEN + {NAME}_BASE_URL）===
     openrouter_auth_token: str = ""
@@ -26,8 +25,11 @@ class Settings(BaseSettings):
     siliconflow_auth_token: str = ""
     siliconflow_base_url: str = "https://api.siliconflow.cn/v1"
 
-    # 向量存储 / Embedding 模型
-    embedding_model_path: str = "E:/bge-small-zh-v1.5"
+    # Embedding API（硅基流动）
+    embedding_api_base: str = "https://api.siliconflow.cn/v1"
+    embedding_api_key: str = ""
+    embedding_model: str = "BAAI/bge-m3"
+    embedding_dim: int = 1024
 
     # Agent 默认配置
     default_speak_interval: int = 60  # 默认发言间隔（秒）

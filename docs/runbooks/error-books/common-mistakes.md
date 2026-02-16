@@ -131,6 +131,18 @@
 ✅ 写错题本前先读文件顶部的"记录规则"段落，确认行数上限，再动手写
 > COMMON-9 变体："我觉得我懂格式" = 不去确认 = 每次超标。
 
+### COMMON-15 Phase 实现后跳过 Code Review 直接进入下一步
+
+❌ Phase 写完 → 直接更新进度 → 准备下一步，被用户提醒才回头做 Review
+✅ Phase 写完 → Code Review → 修复循环至 P0/P1 归零 → 才能更新进度或进入下一步
+> 已写入 CLAUDE.md 工作流强制门禁。Code Review 不是可选步骤，是出口条件。
+
+### COMMON-16 静默失败链路 — 关键分支只 log 不报错，调试时无从定位
+
+❌ `resolve_model` 返回 None → 调用方 `return None, None` → 外层也不报错 → 整条链路静默，E2E 只看到"没回复"
+✅ 关键分支失败时日志带上下文（谁、查什么、为什么失败），dev endpoint 加 `?debug=1` 返回中间状态
+> 静默失败是调试时间的最大放大器。案例：DEV-BUG-12，详见 [postmortem](../postmortems/postmortem-dev-bug-12.md)
+
 ---
 角色专属错误追加到对应角色的错题本，格式：
 

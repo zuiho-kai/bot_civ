@@ -1,4 +1,4 @@
-import type { Message } from '../types'
+import type { Message, Agent } from '../types'
 import { MessageList } from '../components/MessageList'
 import { ChatInput } from '../components/ChatInput'
 
@@ -7,9 +7,10 @@ interface ChatRoomProps {
   connected: boolean
   onSend: (content: string) => void
   activeChannel: string
+  agents?: Agent[]
 }
 
-export function ChatRoom({ messages, connected, onSend, activeChannel }: ChatRoomProps) {
+export function ChatRoom({ messages, connected, onSend, activeChannel, agents }: ChatRoomProps) {
   return (
     <>
       <header className="chat-header">
@@ -22,7 +23,7 @@ export function ChatRoom({ messages, connected, onSend, activeChannel }: ChatRoo
         </span>
       </header>
       <MessageList messages={messages} />
-      <ChatInput onSend={onSend} disabled={!connected} />
+      <ChatInput onSend={onSend} disabled={!connected} agents={agents} />
     </>
   )
 }

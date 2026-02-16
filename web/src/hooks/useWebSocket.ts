@@ -20,6 +20,11 @@ export function useWebSocket(agentId: number, onMessage: (msg: WsIncoming) => vo
 
   // real WebSocket connect
   const connect = useCallback(() => {
+    // 防止 StrictMode 双连接：如果已有活跃连接，先关闭
+    if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
+      wsRef.current.close()
+      wsRef.current = null
+    }
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
     const url = `${protocol}//${location.host}/api/ws/${agentId}`
     const ws = new WebSocket(url)
@@ -55,7 +60,9 @@ export function useWebSocket(agentId: number, onMessage: (msg: WsIncoming) => vo
   }, [agentId])
 
   useEffect(() => {
+    let cancelled = false
     useMock().then((mock) => {
+      if (cancelled) return
       isMockRef.current = mock
       if (mock) {
         setConnected(true)
@@ -64,8 +71,10 @@ export function useWebSocket(agentId: number, onMessage: (msg: WsIncoming) => vo
       }
     })
     return () => {
+      cancelled = true
       clearTimeout(reconnectTimer.current)
       wsRef.current?.close()
+      wsRef.current = null
     }
   }, [connect])
 

@@ -12,6 +12,8 @@ from ..models import Message, Agent
 from ..services.wakeup_service import WakeupService
 from ..services.agent_runner import runner_manager
 from ..services.economy_service import economy_service
+from ..services.memory_service import memory_service
+from ..models import MemoryType
 from .schemas import MessageOut
 
 logger = logging.getLogger(__name__)
@@ -29,6 +31,61 @@ HEARTBEAT_INTERVAL = 30
 
 # 唤醒服务单例
 wakeup_service = WakeupService()
+
+# M2-4: 每 agent 回复计数器，每 EXTRACT_EVERY 条触发记忆提取
+# 注意：仅在 bot 不在线（服务端 fallback 生成回复）时触发，bot 在线时由 bot 自行处理记忆
+EXTRACT_EVERY = 5
+_agent_reply_counts: dict[int, int] = {}
+
+
+async def _extract_memory(agent_id: int, recent_messages: list[dict]):
+    """每 EXTRACT_EVERY 轮对话自动摘要为短期记忆"""
+    count = _agent_reply_counts.get(agent_id, 0) + 1
+    _agent_reply_counts[agent_id] = count
+    if count % EXTRACT_EVERY != 0:
+        return
+    if len(recent_messages) < EXTRACT_EVERY:
+        return
+    try:
+        combined = "\n".join(
+            f"{m.get('name', '?')}: {m.get('content', '')}"
+            for m in recent_messages[-EXTRACT_EVERY:]
+        )
+        summary = f"对话摘要: {combined[:200]}"
+        async with async_session() as db:
+            await memory_service.save_memory(agent_id, summary, MemoryType.SHORT, db)
+        logger.info("Memory extracted for agent %d (reply #%d)", agent_id, count)
+    except Exception as e:
+        logger.warning("Memory extraction failed for agent %d: %s", agent_id, e)
+
+
+async def delayed_send(agent_info: dict, reply: str, usage_info: dict | None, delay: float):
+    """延迟发送 Agent 回复（batch 模式下错开广播时间）"""
+    await asyncio.sleep(delay)
+    history = list(agent_info["history"])  # 防御性拷贝
+    try:
+        async with async_session() as db:
+            await send_agent_message(agent_info["agent_id"], agent_info["agent_name"], reply, db)
+            await economy_service.deduct_quota(agent_info["agent_id"], db)
+            if usage_info:
+                from ..models.tables import LLMUsage
+                record = LLMUsage(
+                    model=usage_info["model"],
+                    agent_id=usage_info["agent_id"],
+                    prompt_tokens=usage_info["prompt_tokens"],
+                    completion_tokens=usage_info["completion_tokens"],
+                    total_tokens=usage_info["total_tokens"],
+                    latency_ms=usage_info["latency_ms"],
+                )
+                db.add(record)
+            await db.commit()
+
+        # 记忆提取
+        history.append({"name": agent_info["agent_name"], "content": reply})
+        await _extract_memory(agent_info["agent_id"], history)
+        logger.info("Delayed send completed for agent %s (delay=%.1fs)", agent_info["agent_name"], delay)
+    except Exception as e:
+        logger.error("Delayed send failed for agent %s: %s", agent_info["agent_name"], e, exc_info=True)
 
 
 def parse_mentions(content: str, agent_names: dict[str, int]) -> list[int]:
@@ -61,7 +118,8 @@ async def broadcast(data: dict):
     for aid, ws in _all_connections():
         try:
             await ws.send_text(text)
-        except Exception:
+        except Exception as e:
+            logger.warning("broadcast send failed for agent_id=%s: %s", aid, e)
             # 清理失败的连接
             if aid in human_connections:
                 try:
@@ -70,7 +128,8 @@ async def broadcast(data: dict):
                     pass
                 if not human_connections[aid]:
                     human_connections.pop(aid, None)
-            bot_connections.pop(aid, None)
+            elif aid in bot_connections and bot_connections[aid] is ws:
+                bot_connections.pop(aid, None)
 
 
 async def broadcast_system_event(event: str, agent_id: int, agent_name: str):
@@ -126,9 +185,9 @@ async def handle_wakeup(message: Message):
 
         async with async_session() as db:
             online_ids = set(human_connections.keys()) | set(bot_connections.keys())
-            print(f"[WAKEUP] online_ids={online_ids}", flush=True)
+            logger.debug("Wakeup: online_ids=%s", online_ids)
             wake_list = await wakeup_service.process(message, online_ids, db)
-            print(f"[WAKEUP] wake_list={wake_list}", flush=True)
+            logger.debug("Wakeup: wake_list=%s", wake_list)
 
             if not wake_list:
                 return
@@ -142,16 +201,16 @@ async def handle_wakeup(message: Message):
                 # Bot 不在线 → fallback 到服务端驱动
                 agent = await db.get(Agent, agent_id)
                 if not agent:
-                    print(f"[WAKEUP] agent {agent_id} not found in db", flush=True)
+                    logger.warning("Wakeup: agent %d not found in db", agent_id)
                     continue
 
                 # 经济预检查
                 can_speak = await economy_service.check_quota(agent_id, "chat", db)
                 if not can_speak.allowed:
-                    print(f"[WAKEUP] agent {agent_id} quota denied: {can_speak.reason}", flush=True)
+                    logger.debug("Wakeup: agent %d quota denied: %s", agent_id, can_speak.reason)
                     continue
 
-                print(f"[WAKEUP] generating reply for agent {agent_id} ({agent.name})", flush=True)
+                logger.debug("Wakeup: generating reply for agent %d (%s)", agent_id, agent.name)
 
                 # 构建聊天历史给 runner
                 recent = await db.execute(
@@ -177,7 +236,7 @@ async def handle_wakeup(message: Message):
                 })
         # 数据库会话已关闭，释放锁
 
-        # 第二阶段：LLM 调用（无数据库会话，不持有锁）
+        # 第二阶段：LLM 调用（记忆注入需要短暂 db 访问）
         for agent_info in agents_to_reply:
             runner = runner_manager.get_or_create(
                 agent_info["agent_id"],
@@ -185,7 +244,10 @@ async def handle_wakeup(message: Message):
                 agent_info["persona"],
                 agent_info["model"]
             )
-            reply, usage_info = await runner.generate_reply(agent_info["history"])
+            async with async_session() as mem_db:
+                reply, usage_info = await runner.generate_reply(
+                    agent_info["history"], db=mem_db
+                )
             logger.info("Agent %s generated reply", agent_info["agent_name"])
 
             # 第三阶段：保存结果（创建新的数据库会话，一次性写入所有数据）
@@ -206,8 +268,16 @@ async def handle_wakeup(message: Message):
                         db.add(record)
                     await db.commit()
 
+                # M2-4: 异步记忆提取（fire-and-forget）
+                # 将 Agent 回复追加到 history，确保摘要包含完整对话
+                agent_info["history"].append({"name": agent_info["agent_name"], "content": reply})
+                task = asyncio.create_task(
+                    _extract_memory(agent_info["agent_id"], agent_info["history"])
+                )
+                _background_tasks.add(task)
+                task.add_done_callback(_background_tasks.discard)
+
     except Exception as e:
-        print(f"[WAKEUP] ERROR: {e}", flush=True)
         logger.error("Wakeup handling failed: %s", e, exc_info=True)
 
 
@@ -383,6 +453,7 @@ async def websocket_endpoint(
             if bot_connections.get(agent_id) is websocket:
                 bot_connections.pop(agent_id, None)
             runner_manager.remove(agent_id)
+            _agent_reply_counts.pop(agent_id, None)
         else:
             if agent_id in human_connections:
                 try:

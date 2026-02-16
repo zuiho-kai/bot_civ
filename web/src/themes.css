@@ -83,6 +83,10 @@
   --channel-active: #404249;
   --channel-hover: #35373c;
   --surface-chat: #f5f5f0;
+
+  /* Credits badge */
+  --credits-text: #946800;
+  --credits-bg: rgba(180, 130, 20, 0.12);
 }
 
 /* --- Dark theme (original) --- */
@@ -148,4 +152,8 @@
   --info-panel-bg: #16213e;
   --channel-active: #1a2a4e;
   --channel-hover: #1a2a4e;
+
+  /* Credits badge */
+  --credits-text: #f0b232;
+  --credits-bg: rgba(240, 178, 50, 0.12);
 }

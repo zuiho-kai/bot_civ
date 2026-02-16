@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import Memory, MemoryType
@@ -33,13 +33,16 @@ class MemoryService:
         await db.refresh(memory)
 
         vec_agent_id = -1 if memory_type == MemoryType.PUBLIC else agent_id
+        memory_id = memory.id  # capture before potential rollback detaches the object
         try:
             await vector_store.upsert_memory(
-                memory.id, vec_agent_id, content, memory_type
+                memory_id, vec_agent_id, content, db
             )
+            await db.commit()
         except Exception as e:
-            logger.error("Vector upsert failed for memory %d, deleting SQLite row: %s", memory.id, e)
-            await db.delete(memory)
+            logger.error("Vector upsert failed for memory %d, deleting SQLite row: %s", memory_id, e)
+            await db.rollback()
+            await db.execute(delete(Memory).where(Memory.id == memory_id))
             await db.commit()
             raise
 
@@ -48,7 +51,7 @@ class MemoryService:
     async def search(
         self, agent_id: int, query: str, top_k: int = 5, db: AsyncSession | None = None
     ) -> list[Memory] | list[dict]:
-        results = await vector_store.search_memories(query, agent_id, top_k)
+        results = await vector_store.search_memories(query, agent_id, top_k, db)
         if not results:
             return []
 
@@ -84,18 +87,11 @@ class MemoryService:
         )
         expired = (await db.execute(stmt)).scalars().all()
 
-        cleaned = 0
         for mem in expired:
-            try:
-                await vector_store.delete_memory(mem.id)
-            except Exception as e:
-                logger.error("Vector delete failed for memory %d: %s", mem.id, e)
-                continue
             await db.delete(mem)
-            cleaned += 1
 
         await db.commit()
-        return cleaned
+        return len(expired)
 
 
 memory_service = MemoryService()

@@ -32,6 +32,9 @@ export function AgentStatusPanel({ agents }: AgentStatusPanelProps) {
                     : ''}
             </div>
           </div>
+          <div className="agent-status-credits" title="信用点">
+            {agent.credits}c
+          </div>
         </div>
       ))}
     </div>

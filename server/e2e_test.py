@@ -5,7 +5,10 @@ import websockets
 
 async def main():
     uri = "ws://localhost:8000/api/ws/0"  # agent_id=0 = human
-    async with websockets.connect(uri) as ws:
+    # 禁用客户端 ping，避免与 uvicorn 服务端 ping 竞争导致连接提前关闭
+    # websockets v13+ 默认 ping_interval=20s, ping_timeout=20s
+    # 当 LLM 调用耗时较长时，双向 ping 可能导致连接被误判为死连接
+    async with websockets.connect(uri, ping_interval=None, ping_timeout=None) as ws:
         # Wait for online event
         msg = await asyncio.wait_for(ws.recv(), timeout=5)
         print(f"[recv] {msg}")

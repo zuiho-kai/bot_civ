@@ -9,10 +9,11 @@ import { ChannelSidebar } from './ChannelSidebar'
 import { InfoPanel } from './InfoPanel'
 import { ChatRoom } from '../pages/ChatRoom'
 import { AgentManager } from '../pages/AgentManager'
+import { BountyBoard } from '../pages/BountyBoard'
 
 const HUMAN_AGENT_ID = 0
 
-type View = 'chat' | 'agents'
+type View = 'chat' | 'agents' | 'bounties'
 
 export function DiscordLayout() {
   const [messages, setMessages] = useState<Message[]>([])
@@ -29,7 +30,11 @@ export function DiscordLayout() {
 
   const handleWsMessage = useCallback((msg: WsIncoming) => {
     if (msg.type === 'new_message') {
-      setMessages(prev => [...prev, msg.data])
+      setMessages(prev => {
+        // 去重：StrictMode 双连接或网络重放可能导致同一消息到达两次
+        if (prev.some(m => m.id === msg.data.id)) return prev
+        return [...prev, msg.data]
+      })
     } else if (msg.type === 'system_event') {
       const { event, agent_id } = msg.data
       setOnlineIds(prev => {
@@ -54,6 +59,10 @@ export function DiscordLayout() {
     setView(view === 'agents' ? 'chat' : 'agents')
   }
 
+  const handleViewChange = (v: View) => {
+    setView(v)
+  }
+
   return (
     <div className="discord-layout">
       <ServerRail onSettingsClick={handleSettingsClick} themeToggle={toggle} />
@@ -61,6 +70,8 @@ export function DiscordLayout() {
         serverName="OpenClaw"
         activeChannel={activeChannel}
         onChannelSelect={setActiveChannel}
+        view={view}
+        onViewChange={handleViewChange}
       />
       <div className="chat-area">
         {view === 'chat' ? (
@@ -69,9 +80,12 @@ export function DiscordLayout() {
             connected={connected}
             onSend={handleSend}
             activeChannel={activeChannel}
+            agents={agents}
           />
-        ) : (
+        ) : view === 'agents' ? (
           <AgentManager />
+        ) : (
+          <BountyBoard agents={agents} />
         )}
       </div>
       <InfoPanel announcements={MOCK_ANNOUNCEMENTS} agents={agents} />

@@ -1,5 +1,5 @@
-import type { Agent, Message } from './types'
-import { MOCK_AGENTS, MOCK_MESSAGES } from './mock-data'
+import type { Agent, Message, Bounty } from './types'
+import { MOCK_AGENTS, MOCK_MESSAGES, MOCK_BOUNTIES } from './mock-data'
 
 const BASE = '/api'
 
@@ -104,4 +104,74 @@ export async function deleteAgent(id: number): Promise<void> {
   }
   const res = await fetch(`${BASE}/agents/${id}`, { method: 'DELETE' })
   if (!res.ok) throw new Error(`deleteAgent: ${res.status}`)
+}
+
+// --- Bounty API ---
+
+export async function fetchBounties(status?: string): Promise<Bounty[]> {
+  if (await useMock()) {
+    return status ? MOCK_BOUNTIES.filter((b) => b.status === status) : [...MOCK_BOUNTIES]
+  }
+  const params = status ? `?status=${status}` : ''
+  const res = await fetch(`${BASE}/bounties/${params}`)
+  if (!res.ok) throw new Error(`fetchBounties: ${res.status}`)
+  return res.json()
+}
+
+export async function createBounty(data: {
+  title: string
+  description?: string
+  reward: number
+}): Promise<Bounty> {
+  if (await useMock()) {
+    const b: Bounty = {
+      id: Date.now(),
+      title: data.title,
+      description: data.description ?? '',
+      reward: data.reward,
+      status: 'open',
+      claimed_by: null,
+      created_at: new Date().toISOString(),
+      completed_at: null,
+    }
+    MOCK_BOUNTIES.push(b)
+    return b
+  }
+  const res = await fetch(`${BASE}/bounties/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw new Error(`createBounty: ${res.status}`)
+  return res.json()
+}
+
+export async function claimBounty(bountyId: number, agentId: number): Promise<Bounty> {
+  if (await useMock()) {
+    const b = MOCK_BOUNTIES.find((b) => b.id === bountyId)
+    if (!b || b.status !== 'open') throw new Error('Cannot claim')
+    b.status = 'claimed'
+    b.claimed_by = agentId
+    return b
+  }
+  const res = await fetch(`${BASE}/bounties/${bountyId}/claim?agent_id=${agentId}`, {
+    method: 'POST',
+  })
+  if (!res.ok) throw new Error(`claimBounty: ${res.status}`)
+  return res.json()
+}
+
+export async function completeBounty(bountyId: number, agentId: number): Promise<Bounty> {
+  if (await useMock()) {
+    const b = MOCK_BOUNTIES.find((b) => b.id === bountyId)
+    if (!b || b.status !== 'claimed') throw new Error('Cannot complete')
+    b.status = 'completed'
+    b.completed_at = new Date().toISOString()
+    return b
+  }
+  const res = await fetch(`${BASE}/bounties/${bountyId}/complete?agent_id=${agentId}`, {
+    method: 'POST',
+  })
+  if (!res.ok) throw new Error(`completeBounty: ${res.status}`)
+  return res.json()
 }

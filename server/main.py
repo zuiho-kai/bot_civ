@@ -17,8 +17,8 @@ from app.core.config import settings
 from app.core.database import async_session
 from app.models import Agent
 from app.api import agents_router, chat_router, dev_router, bounties_router
-from app.services.vector_store import init_vector_store
-from app.services.scheduler import scheduler_loop
+from app.services.vector_store import init_vector_store, close_vector_store
+from app.services.scheduler import scheduler_loop, hourly_wakeup_loop
 
 
 async def ensure_human_agent():
@@ -34,14 +34,21 @@ async def ensure_human_agent():
 async def lifespan(app: FastAPI):
     await init_db()
     await ensure_human_agent()
-    await init_vector_store(settings.lancedb_path)
+    await init_vector_store()
     scheduler_task = asyncio.create_task(scheduler_loop())
+    wakeup_task = asyncio.create_task(hourly_wakeup_loop())
     yield
     scheduler_task.cancel()
+    wakeup_task.cancel()
     try:
         await scheduler_task
     except asyncio.CancelledError:
         pass
+    try:
+        await wakeup_task
+    except asyncio.CancelledError:
+        pass
+    await close_vector_store()
 
 
 app = FastAPI(title="OpenClaw Community", version="0.1.0", lifespan=lifespan)

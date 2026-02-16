@@ -62,7 +62,7 @@ async def test_wakeup_with_quota_allows_reply(db, setup_data):
     agent, msg = setup_data
 
     mock_runner = MagicMock()
-    mock_runner.generate_reply = AsyncMock(return_value="Hi there!")
+    mock_runner.generate_reply = AsyncMock(return_value=("Hi there!", None))
 
     with (
         patch("app.api.chat.async_session", return_value=_make_context_manager(db)),
@@ -86,8 +86,12 @@ async def test_wakeup_with_quota_allows_reply(db, setup_data):
 
         mock_econ.check_quota.assert_awaited_once_with(1, "chat", db)
         mock_runner.generate_reply.assert_awaited_once()
-        mock_send.assert_awaited_once_with(agent.id, agent.name, "Hi there!")
-        mock_econ.deduct_quota.assert_awaited_once_with(1, db)
+        assert mock_send.await_count == 1
+        call_args = mock_send.call_args
+        assert call_args[0][0] == agent.id
+        assert call_args[0][1] == agent.name
+        assert call_args[0][2] == "Hi there!"
+        mock_econ.deduct_quota.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -96,7 +100,7 @@ async def test_wakeup_no_quota_skips_reply(db, setup_data):
     _agent, msg = setup_data
 
     mock_runner = MagicMock()
-    mock_runner.generate_reply = AsyncMock(return_value="should not happen")
+    mock_runner.generate_reply = AsyncMock(return_value=("should not happen", None))
 
     with (
         patch("app.api.chat.async_session", return_value=_make_context_manager(db)),
@@ -138,7 +142,7 @@ async def test_deduct_after_successful_reply(db, setup_data):
         call_order.append("deduct")
 
     mock_runner = MagicMock()
-    mock_runner.generate_reply = AsyncMock(return_value="reply text")
+    mock_runner.generate_reply = AsyncMock(return_value=("reply text", None))
 
     with (
         patch("app.api.chat.async_session", return_value=_make_context_manager(db)),

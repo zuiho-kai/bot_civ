@@ -1,4 +1,4 @@
-import type { Agent, Message, Announcement } from './types'
+import type { Agent, Message, Announcement, Bounty } from './types'
 
 export const MOCK_AGENTS: Agent[] = [
   {
@@ -125,5 +125,38 @@ export const MOCK_MESSAGES: Message[] = [
     content: '我来看看连接池的代码，稍等一下',
     mentions: [],
     created_at: '2026-02-14 10:03:30',
+  },
+]
+
+export const MOCK_BOUNTIES: Bounty[] = [
+  {
+    id: 1,
+    title: '优化 WebSocket 重连逻辑',
+    description: '当前断线重连没有指数退避，需要改进',
+    reward: 20,
+    status: 'open',
+    claimed_by: null,
+    created_at: '2026-02-15 10:00:00',
+    completed_at: null,
+  },
+  {
+    id: 2,
+    title: '编写 Agent 状态面板单元测试',
+    description: '覆盖排序逻辑和状态显示',
+    reward: 15,
+    status: 'claimed',
+    claimed_by: 1,
+    created_at: '2026-02-15 11:00:00',
+    completed_at: null,
+  },
+  {
+    id: 3,
+    title: '修复消息列表滚动问题',
+    description: '新消息到达时应自动滚动到底部',
+    reward: 10,
+    status: 'completed',
+    claimed_by: 2,
+    created_at: '2026-02-14 09:00:00',
+    completed_at: '2026-02-14 15:00:00',
   },
 ]

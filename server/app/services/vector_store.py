@@ -1,111 +1,121 @@
-"""LanceDB vector store for agent memories."""
+"""SQLite BLOB + NumPy cosine similarity vector store for agent memories.
 
-import asyncio
+Scalability note: search_memories loads all embeddings for the agent into memory
+and computes cosine similarity with NumPy. This is fine for <10k memories per agent.
+For larger scale, consider SQLite FTS5 for coarse filtering before vector ranking.
+"""
+
 import logging
-from datetime import datetime, timezone
+
+import httpx
+import numpy as np
+from sqlalchemy import select, delete
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from ..core.config import settings
+from ..models import Memory
 
 logger = logging.getLogger(__name__)
 
-_db = None
-_model = None
-_table = None
-
-VECTOR_DIM = 512
-TABLE_NAME = "memories"
+_client: httpx.AsyncClient | None = None
 
 
-def _ensure_initialized():
-    if _table is None or _model is None:
-        raise RuntimeError("vector_store not initialized. Call init_vector_store() first.")
-
-
-def _build_schema():
-    import pyarrow as pa
-    return pa.schema([
-        pa.field("memory_id", pa.int64()),
-        pa.field("agent_id", pa.int64()),
-        pa.field("text", pa.utf8()),
-        pa.field("memory_type", pa.utf8()),
-        pa.field("vector", pa.list_(pa.float32(), VECTOR_DIM)),
-        pa.field("created_at", pa.utf8()),
-    ])
-
-
-async def init_vector_store(lancedb_path: str) -> None:
-    global _db, _model, _table
-    import lancedb as _lancedb
-    from sentence_transformers import SentenceTransformer
-    from ..core.config import settings
-
-    _db = await asyncio.to_thread(_lancedb.connect, lancedb_path)
-    _model = await asyncio.to_thread(
-        SentenceTransformer, settings.embedding_model_path
+async def init_vector_store() -> None:
+    """Initialize the embedding API client."""
+    global _client
+    if not settings.embedding_api_key:
+        logger.warning("EMBEDDING_API_KEY not configured — vector search will be unavailable")
+    _client = httpx.AsyncClient(
+        base_url=settings.embedding_api_base,
+        headers={"Authorization": f"Bearer {settings.embedding_api_key}"},
+        timeout=30.0,
     )
-    table_names = await asyncio.to_thread(_db.table_names)
-    if TABLE_NAME in table_names:
-        _table = await asyncio.to_thread(_db.open_table, TABLE_NAME)
-    else:
-        _table = await asyncio.to_thread(_db.create_table, TABLE_NAME, schema=_build_schema())
+    logger.info("Vector store initialized (embedding API: %s, model: %s)",
+                settings.embedding_api_base, settings.embedding_model)
 
 
-def embed(text: str) -> list[float]:
-    _ensure_initialized()
-    return _model.encode(text, normalize_embeddings=True).tolist()
+async def close_vector_store() -> None:
+    """Shutdown the embedding API client."""
+    global _client
+    if _client is not None:
+        await _client.aclose()
+        _client = None
+        logger.info("Vector store client closed")
 
 
-def _upsert_sync(row: dict, memory_id: int) -> None:
-    """Sync helper for upsert — runs in thread pool."""
-    if not isinstance(memory_id, int):
-        raise TypeError(f"memory_id must be int, got {type(memory_id)}")
-    try:
-        _table.delete(f"memory_id = {memory_id}")
-    except Exception:
-        logger.debug("No existing row for memory_id=%d, inserting fresh", memory_id)
-    _table.add([row])
+async def embed(text: str) -> bytes:
+    """Call embedding API and return float32 bytes."""
+    if _client is None:
+        raise RuntimeError("vector_store not initialized. Call init_vector_store() first.")
+    resp = await _client.post("/embeddings", json={
+        "model": settings.embedding_model,
+        "input": text,
+        "encoding_format": "float",
+    })
+    resp.raise_for_status()
+    data = resp.json()
+    if not data.get("data") or not data["data"][0].get("embedding"):
+        raise ValueError(f"Unexpected embedding API response: {list(data.keys())}")
+    vec = data["data"][0]["embedding"]
+    blob = np.array(vec, dtype=np.float32).tobytes()
+    expected_size = settings.embedding_dim * 4
+    if len(blob) != expected_size:
+        raise ValueError(f"Embedding dimension mismatch: got {len(blob) // 4}, expected {settings.embedding_dim}")
+    return blob
 
 
 async def upsert_memory(
-    memory_id: int, agent_id: int, text: str, memory_type: str
+    memory_id: int, agent_id: int, text: str, db: AsyncSession
 ) -> None:
-    _ensure_initialized()
+    """Generate embedding and store it in the Memory row."""
     if not text or not text.strip():
         raise ValueError("Cannot embed empty or blank text")
-    vec = await asyncio.to_thread(embed, text)
-    row = {
-        "memory_id": memory_id,
-        "agent_id": agent_id,
-        "text": text,
-        "memory_type": memory_type,
-        "vector": vec,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-    }
-    await asyncio.to_thread(_upsert_sync, row, memory_id)
-
-
-def _search_sync(vec: list[float], agent_id: int, top_k: int) -> list[dict]:
-    """Sync helper for search — runs in thread pool."""
-    if not isinstance(agent_id, int):
-        raise TypeError(f"agent_id must be int, got {type(agent_id)}")
-    return (
-        _table.search(vec)
-        .where(f"(agent_id = {agent_id}) OR (agent_id = -1)", prefilter=True)
-        .limit(top_k)
-        .to_list()
-    )
+    blob = await embed(text)
+    mem = await db.get(Memory, memory_id)
+    if mem is None:
+        raise ValueError(f"Memory {memory_id} not found in database")
+    mem.embedding = blob
 
 
 async def search_memories(
-    query: str, agent_id: int, top_k: int = 5
+    query: str, agent_id: int, top_k: int = 5, db: AsyncSession | None = None
 ) -> list[dict]:
-    _ensure_initialized()
+    """Search memories by cosine similarity."""
     if not query or not query.strip():
         return []
-    vec = await asyncio.to_thread(embed, query)
-    return await asyncio.to_thread(_search_sync, vec, agent_id, top_k)
+    if db is None:
+        return []
+
+    query_blob = await embed(query)
+    query_vec = np.frombuffer(query_blob, dtype=np.float32)
+
+    # P0: guard against zero-norm query vector (e.g. API returned all zeros)
+    query_norm = np.linalg.norm(query_vec)
+    if query_norm < 1e-8:
+        logger.warning("Query embedding has near-zero norm, returning empty results")
+        return []
+
+    stmt = select(Memory).where(
+        Memory.embedding.isnot(None),
+        (Memory.agent_id == agent_id) | (Memory.agent_id.is_(None))
+    )
+    rows = (await db.execute(stmt)).scalars().all()
+    if not rows:
+        return []
+
+    vecs = np.array([np.frombuffer(r.embedding, dtype=np.float32) for r in rows])
+    row_norms = np.linalg.norm(vecs, axis=1)
+    norms = row_norms * query_norm + 1e-8
+    sims = vecs @ query_vec / norms
+    top_k = max(1, min(top_k, len(rows)))
+    top_idx = np.argsort(sims)[-top_k:][::-1]
+
+    return [
+        {"memory_id": rows[i].id, "text": rows[i].content, "_distance": float(1 - sims[i])}
+        for i in top_idx
+    ]
 
 
 async def delete_memory(memory_id: int) -> None:
-    _ensure_initialized()
-    if not isinstance(memory_id, int):
-        raise TypeError(f"memory_id must be int, got {type(memory_id)}")
-    await asyncio.to_thread(_table.delete, f"memory_id = {memory_id}")
+    """No-op: SQLite cascade handles deletion."""
+    pass

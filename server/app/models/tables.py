@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Date, Text, JSON, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Date, Text, JSON, ForeignKey, Enum, LargeBinary
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from ..core.database import Base
@@ -63,6 +63,7 @@ class Memory(Base):
     agent_id = Column(Integer, ForeignKey("agents.id"), nullable=True)  # NULL = 公共记忆
     memory_type = Column(String(16), default=MemoryType.SHORT)
     content = Column(Text, nullable=False)
+    embedding = Column(LargeBinary, nullable=True)  # float32 embedding blob, size = embedding_dim * 4
     access_count = Column(Integer, default=0)
     expires_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, server_default=func.now())

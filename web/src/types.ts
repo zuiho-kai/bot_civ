@@ -58,3 +58,15 @@ export interface WsSystemEvent {
 }
 
 export type WsIncoming = WsNewMessage | WsSystemEvent
+
+// 悬赏任务
+export interface Bounty {
+  id: number
+  title: string
+  description: string
+  reward: number
+  status: 'open' | 'claimed' | 'completed'
+  claimed_by: number | null
+  created_at: string
+  completed_at: string | null
+}

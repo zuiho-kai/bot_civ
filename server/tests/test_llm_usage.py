@@ -80,3 +80,6 @@ async def test_vector_store_imports():
     assert hasattr(vector_store, "init_vector_store")
     assert hasattr(vector_store, "upsert_memory")
     assert hasattr(vector_store, "search_memories")
+    assert hasattr(vector_store, "delete_memory")
+    assert hasattr(vector_store, "embed")
+    assert hasattr(vector_store, "close_vector_store")

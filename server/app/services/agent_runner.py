@@ -4,36 +4,18 @@ Agent 自动回复引擎
 Phase 1：直接使用 OpenAI/Anthropic SDK 调用 LLM
 Phase 2：替换为 OpenClaw SDK（外部接口不变）
 """
-import asyncio
 import logging
 import time
 from openai import AsyncOpenAI
+from sqlalchemy.ext.asyncio import AsyncSession
 from ..core.config import resolve_model
-from ..core.database import async_session as db_session_maker
-from ..models.tables import LLMUsage
+from ..core.database import async_session as session_maker
+from ..models import MemoryType
+from .memory_service import memory_service
 
 logger = logging.getLogger(__name__)
 
-# prevent fire-and-forget tasks from being GC'd before completion
-_background_tasks: set[asyncio.Task] = set()
-
-
-async def _record_usage(model: str, agent_id: int, usage, latency_ms: int):
-    """异步写入 LLM 用量记录，不阻塞主流程"""
-    try:
-        async with db_session_maker() as session:
-            record = LLMUsage(
-                model=model,
-                agent_id=agent_id,
-                prompt_tokens=usage.prompt_tokens or 0,
-                completion_tokens=usage.completion_tokens or 0,
-                total_tokens=usage.total_tokens or 0,
-                latency_ms=latency_ms,
-            )
-            session.add(record)
-            await session.commit()
-    except Exception as e:
-        logger.error("Failed to record LLM usage: %s", e, exc_info=True)
+MAX_MEMORY_CHARS = 500  # 记忆注入最大字符数
 
 
 SYSTEM_PROMPT_TEMPLATE = """你是 {name}，一个聊天群里的成员。
@@ -58,25 +40,53 @@ class AgentRunner:
         self.name = name
         self.persona = persona
         self.model = model
-        self.context: list[dict] = []  # 增量上下文
 
-    async def generate_reply(self, chat_history: list[dict]) -> tuple[str | None, dict | None]:
+    async def generate_reply(
+        self, chat_history: list[dict], db: AsyncSession | None = None
+    ) -> tuple[str | None, dict | None]:
         """
         生成 Agent 回复。
         chat_history: [{"name": "Alice", "content": "xxx"}, ...]
+        db: 传入时启用记忆注入
         """
-        # 更新增量上下文
-        for msg in chat_history:
-            self.context.append(msg)
-        # FIFO 裁剪
-        if len(self.context) > self.MAX_CONTEXT_ROUNDS:
-            self.context = self.context[-self.MAX_CONTEXT_ROUNDS:]
+        # 使用 chat_history 作为上下文（已从 DB 查询最新历史）
+        context = list(chat_history)
+        if len(context) > self.MAX_CONTEXT_ROUNDS:
+            context = context[-self.MAX_CONTEXT_ROUNDS:]
 
         system_msg = SYSTEM_PROMPT_TEMPLATE.format(
             name=self.name, persona=self.persona
         )
+
+        # M2-3: 记忆注入
+        if db is not None:
+            try:
+                recent_text = " ".join(
+                    m.get("content", "") for m in context[-3:]
+                )
+                memories = await memory_service.search(
+                    self.agent_id, recent_text, top_k=5, db=db
+                )
+                if memories:
+                    personal = [m for m in memories if m.memory_type in (MemoryType.SHORT, MemoryType.LONG)]
+                    public = [m for m in memories if m.memory_type == MemoryType.PUBLIC]
+                    mem_block = ""
+                    if personal:
+                        mem_block += "\n\n## 你的相关记忆\n"
+                        for m in personal[:3]:
+                            mem_block += f"- {m.content}\n"
+                    if public:
+                        mem_block += "\n## 公共知识\n"
+                        for m in public[:2]:
+                            mem_block += f"- {m.content}\n"
+                    if len(mem_block) > MAX_MEMORY_CHARS:
+                        mem_block = mem_block[:MAX_MEMORY_CHARS] + "..."
+                    system_msg += mem_block
+            except Exception as e:
+                logger.warning("Memory injection failed for %s: %s", self.name, e)
+
         messages = [{"role": "system", "content": system_msg}]
-        for entry in self.context:
+        for entry in context:
             if entry.get("name") == self.name:
                 messages.append({"role": "assistant", "content": entry["content"]})
             else:
@@ -126,7 +136,6 @@ class AgentRunner:
             logger.info("Agent %s generated reply (len=%d)", self.name, len(reply) if reply else 0)
             if reply:
                 reply = reply.strip()
-                self.context.append({"name": self.name, "content": reply})
             return reply, usage_info
         except Exception as e:
             logger.error("AgentRunner LLM call failed for %s: %s", self.name, e)
@@ -148,6 +157,52 @@ class AgentRunnerManager:
 
     def remove(self, agent_id: int):
         self._runners.pop(agent_id, None)
+
+    async def batch_generate(
+        self,
+        agents_info: list[dict],
+    ) -> dict[int, tuple[str | None, dict | None]]:
+        """
+        按模型分组并发调用 LLM。
+        agents_info: [{"agent_id", "agent_name", "persona", "model", "history"}, ...]
+        返回 {agent_id: (reply, usage_info)}
+        每个协程内部创建独立的 AsyncSession，避免并发共享。
+        """
+        import asyncio
+
+        # 1. 逐个构建 runner + 按模型分组
+        prompts_by_model: dict[str, list[tuple[int, AgentRunner, list[dict]]]] = {}
+        for info in agents_info:
+            runner = self.get_or_create(
+                info["agent_id"], info["agent_name"],
+                info["persona"], info["model"],
+            )
+            model_key = info["model"]
+            prompts_by_model.setdefault(model_key, []).append(
+                (info["agent_id"], runner, info["history"])
+            )
+
+        # 2. 按模型分组并发调用（每个协程独立 session）
+        results: dict[int, tuple[str | None, dict | None]] = {}
+
+        async def _call_one(agent_id, runner, history):
+            try:
+                async with session_maker() as db:
+                    return agent_id, await runner.generate_reply(history, db=db)
+            except Exception as e:
+                logger.error("Batch generate failed for agent %d: %s", agent_id, e)
+                return agent_id, (None, None)
+
+        tasks = []
+        for group in prompts_by_model.values():
+            for agent_id, runner, history in group:
+                tasks.append(_call_one(agent_id, runner, history))
+
+        gather_results = await asyncio.gather(*tasks)
+        for agent_id, result in gather_results:
+            results[agent_id] = result
+
+        return results
 
 
 # 全局单例
