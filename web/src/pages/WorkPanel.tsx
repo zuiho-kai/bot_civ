@@ -219,8 +219,8 @@ export function WorkPanel({ agents, onCreditsChange }: WorkPanelProps) {
         ))}
       </div>
 
-      {message && <div className="wp-success">{message}</div>}
-      {error && <div className="form-error">{error}</div>}
+      {message && <div className="wp-success" role="status" aria-live="polite">{message}</div>}
+      {error && <div className="form-error" role="alert" aria-live="assertive">{error}</div>}
 
       {loading ? (
         <div className="am-loading">加载中...</div>

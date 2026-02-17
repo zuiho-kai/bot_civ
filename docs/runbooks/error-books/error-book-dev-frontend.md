@@ -58,3 +58,13 @@
 - **根因**: 未分类并行处理；空日志反复读；UX 问题误判为后端 bug
 - **修复**: 3 文件改动（App.css / WorkPanel.tsx / UserAvatar.tsx）；agent 不回复是配置问题
 - **详细**: [postmortem-dev-bug-13.md](../postmortems/postmortem-dev-bug-13.md)
+
+### DEV-13 LLM 生成前端代码缺少 WCAG / CSS 审计 → 累积可访问性债务
+
+❌ 代码生成后依赖 LLM 自检可访问性和视觉合规性
+✅ 代码生成后必须跑外部审查工具（Gemini 视觉审查 / Lighthouse / axe-core）
+❌ 触摸目标 padding 随手写 5px/6px，没有 44px 最小尺寸意识
+✅ 交互元素（button/select/input）强制 `min-height: 44px`（WCAG 2.5.8）
+❌ ARIA 属性（listbox/combobox/aria-live）在功能实现时被忽略
+✅ 涉及动态列表/弹出/反馈消息的组件，实现时同步加 ARIA 属性
+> 根因：LLM 生成代码时关注功能实现，不会同时跑可访问性 checklist；缺少视觉感知无法判断渲染尺寸。需要外部工具补位。

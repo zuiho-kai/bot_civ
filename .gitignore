@@ -8,5 +8,6 @@ data/
 .vite/
 nul
 .playwright-mcp/
+skills/
 .venv/
 *.bat

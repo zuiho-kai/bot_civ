@@ -1,0 +1,14 @@
+1. 前端ui难看
+<div class="bb-form"><input placeholder="悬赏标题" value=""><textarea placeholder="描述（可选）" rows="2"></textarea><div class="bb-form-row"><label>奖励:<input min="1" max="10000" class="bb-reward-input" type="number" value="10"><span class="bb-unit">信用点</span></label><button disabled="">发布</button></div></div>
+
+2.搞一个下拉搜索框，这个页面定位是给人类的管理后台
+<div class="wp-agent-trigger open"><div class="wp-agent-avatar">X</div><div class="wp-agent-info"><div class="wp-agent-name">XiaoMing</div><div class="wp-agent-credits">120 信用点</div></div><span class="wp-agent-chevron">▼</span></div>
+
+3. xiaoming买了金色头像框之后没显示
+
+4. 选中之后颜色一坨屎，还是黑夜模式，你能不能有点审美
+
+<div class="agent-status-item"><div class="agent-status-avatar"><div class="user-avatar " aria-hidden="true" style="width: 32px; height: 32px; border-radius: 50%; background-color: rgb(88, 101, 242); color: rgb(255, 255, 255); display: flex; align-items: center; justify-content: center; font-size: 14.4px; font-weight: 600; flex-shrink: 0; box-shadow: rgba(0, 0, 0, 0.15) 0px 0px 0px 2px, rgba(0, 0, 0, 0.2) 0px 1px 3px;">X</div><span class="agent-status-dot idle"></span></div><div class="agent-status-info"><div class="agent-status-name">XiaoLan</div><div class="agent-status-activity">空闲</div></div><div class="agent-status-credits" title="信用点">120c</div></div>
+
+5. 发了消息之后没回我，现在先用cli接入吧还是怎么样，感觉openclaw上下文开销太大了，免费模型支撑不了，还是我openclaw配置有问题
+

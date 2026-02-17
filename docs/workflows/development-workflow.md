@@ -13,14 +13,18 @@
   ↓
 阶段 2：技术设计（Developer/Tech Lead 编写 spec）
   ↓
+阶段 2.5：UI 设计稿（Gemini 生成）[仅含前端 UI 的功能]
+  ↓
 阶段 3：正向串讲（Developer → QA Lead）[可选]
   ↓
 阶段 4：反向串讲（QA Lead → Developer）[可选]
   ↓
 阶段 5：测试用例设计（QA Lead）
   ↓
-阶段 6：开发实施（前后端并行）
+阶段 6：开发实施（Claude Code 按设计稿写代码）
   ↓
+阶段 6.5：UI 美学验收（Gemini 截图审查）[仅含前端 UI 的功能]
+  ↓ ← 未通过则回到阶段 6 修复，再次验收
 阶段 7：集成测试（QA Lead 验证 + Developer 修复）
   ↓
 阶段 8：上线评审（四方确认）
@@ -68,6 +72,33 @@
 **检查点**：
 - [ ] spec 文件包含完整技术设计
 - [ ] Architect 审核通过
+
+---
+
+## 阶段 2.5：UI 设计稿（Gemini 生成）
+
+**触发条件**：功能包含新的前端 UI 组件或页面。纯后端/API 功能跳过此阶段。
+
+**目标**：在写代码前，让 Gemini 作为 UI 设计师产出设计规格，Claude Code 按规格实现，保证视觉质量。
+
+**执行**：
+```bash
+# 输入功能描述，Gemini 输出设计稿
+VAULT_MASTER_KEY="your-key" node scripts/gemini-design.mjs "功能描述"
+```
+
+**输出**：`docs/specs/_ui-designs/YYYY-MM-DD-功能名.md`，包含：
+- 组件结构树
+- 布局规格（尺寸、flex/grid、间距）
+- 视觉规格（CSS 变量、圆角、阴影）
+- 交互状态（hover、empty、loading）
+- 关键 CSS 片段
+- 验收标准（供阶段 6.5 使用）
+
+**检查点**：
+- [ ] 设计稿已生成并保存到 `docs/specs/_ui-designs/`
+- [ ] 设计稿包含明确的验收标准（至少 5 条）
+- [ ] Claude Code（Developer）已阅读设计稿，理解要求
 
 ---
 
@@ -131,6 +162,40 @@
 - [ ] 代码已实现，单元测试通过
 - [ ] 自测通过，代码已提交
 - [ ] 进度已更新
+
+---
+
+## 阶段 6.5：UI 美学验收（Gemini 截图审查）
+
+**触发条件**：阶段 2.5 已执行（即本功能有前端 UI）。
+
+**目标**：Gemini Vision 对照设计稿验收实际界面，确保美学质量达标后才进入集成测试。
+
+**执行**：
+```bash
+# 先确保开发服务器运行中（npm run dev）
+# 基础审查（无设计稿对比）
+VAULT_MASTER_KEY="your-key" node scripts/gemini-review.mjs
+
+# 对照设计稿审查（推荐）
+VAULT_MASTER_KEY="your-key" node scripts/gemini-review.mjs \
+  --url http://localhost:5173 \
+  --design docs/specs/_ui-designs/YYYY-MM-DD-功能名.md
+```
+
+**通过标准**：综合评分 ≥ 7/10 且无 P0 问题
+
+**循环**：
+```
+Gemini 审查 → FAIL → Claude Code 修复 → 重新审查 → 直到 PASS
+```
+
+**产出**：`docs/specs/_ui-reviews/YYYY-MM-DD-HH-mm-ss.md`
+
+**检查点**：
+- [ ] Gemini 审查结论为 PASS
+- [ ] 审查报告已保存
+- [ ] 所有 P0 问题已修复
 
 ---
 

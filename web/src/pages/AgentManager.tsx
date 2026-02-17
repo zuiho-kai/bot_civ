@@ -86,21 +86,27 @@ function CreateAgentForm({ onCreated }: { onCreated: () => void }) {
 
   return (
     <form className="create-agent-form" onSubmit={handleSubmit}>
+      <label htmlFor="agent-name" className="sr-only">Agent 名称</label>
       <input
+        id="agent-name"
         type="text"
         placeholder="Agent 名称"
         value={name}
         onChange={(e) => setName(e.target.value)}
         required
       />
+      <label htmlFor="agent-persona" className="sr-only">人格描述</label>
       <textarea
+        id="agent-persona"
         placeholder="人格描述（persona）"
         value={persona}
         onChange={(e) => setPersona(e.target.value)}
         rows={3}
         required
       />
+      <label htmlFor="agent-model" className="sr-only">模型名称</label>
       <input
+        id="agent-model"
         type="text"
         list="model-presets"
         placeholder="模型名称（可输入自定义模型）"

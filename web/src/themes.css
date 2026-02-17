@@ -92,5 +92,8 @@
   --color-success: #23a559;
   --color-success-bg: rgba(35, 165, 89, 0.15);
   --card-bg: #eaeae4;
+
+  /* Shadow */
+  --shadow-card: 0 0 0 2px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.2);
 }
 

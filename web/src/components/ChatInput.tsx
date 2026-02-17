@@ -107,11 +107,14 @@ export function ChatInput({ onSend, disabled, agents = [] }: ChatInputProps) {
     <form className="chat-input" onSubmit={handleSubmit}>
       <div className="chat-input-wrapper">
         {showMention && (
-          <div className="mention-popup">
+          <div className="mention-popup" role="listbox" id="mention-listbox">
             {candidates.map((a, i) => (
               <div
                 key={a.id}
                 className={`mention-item ${i === mentionIndex ? 'active' : ''}`}
+                role="option"
+                id={`mention-opt-${i}`}
+                aria-selected={i === mentionIndex}
                 onMouseDown={(e) => { e.preventDefault(); insertMention(a.name) }}
                 onMouseEnter={() => setMentionIndex(i)}
               >
@@ -125,6 +128,11 @@ export function ChatInput({ onSend, disabled, agents = [] }: ChatInputProps) {
         <input
           ref={inputRef}
           type="text"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={showMention}
+          aria-controls="mention-listbox"
+          aria-activedescendant={showMention ? `mention-opt-${mentionIndex}` : undefined}
           value={text}
           onChange={(e) => handleChange(e.target.value)}
           onKeyDown={handleKeyDown}

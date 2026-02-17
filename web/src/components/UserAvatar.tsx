@@ -36,7 +36,7 @@ export function UserAvatar({ name, size = 36, className }: UserAvatarProps) {
         fontSize: size * 0.45,
         fontWeight: 600,
         flexShrink: 0,
-        boxShadow: '0 0 0 2px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.2)',
+        boxShadow: 'var(--shadow-card)',
       }}
       aria-hidden="true"
     >
