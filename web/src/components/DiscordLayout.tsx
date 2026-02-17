@@ -22,7 +22,7 @@ export function DiscordLayout() {
   const [onlineIds, setOnlineIds] = useState<Set<number>>(new Set())
   const [activeChannel, setActiveChannel] = useState('general')
   const [view, setView] = useState<View>('chat')
-  const { toggle } = useTheme()
+  useTheme()
 
   useEffect(() => {
     fetchMessages().then(setMessages).catch(console.error)
@@ -70,7 +70,7 @@ export function DiscordLayout() {
 
   return (
     <div className="discord-layout">
-      <ServerRail onSettingsClick={handleSettingsClick} themeToggle={toggle} />
+      <ServerRail onSettingsClick={handleSettingsClick} />
       <ChannelSidebar
         serverName="OpenClaw"
         activeChannel={activeChannel}

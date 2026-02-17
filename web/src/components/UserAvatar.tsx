@@ -1,6 +1,6 @@
 const AVATAR_COLORS = [
-  '#5865f2', '#57f287', '#eb459e', '#ed4245',
-  '#3ba55d', '#faa61a', '#5865f2', '#fee75c',
+  '#395573', '#5a8a6e', '#8a6b8a', '#7a6b4e',
+  '#4e7a8a', '#6b5a8a', '#8a7a5a', '#5a6b7a',
 ]
 
 function hashString(str: string): number {

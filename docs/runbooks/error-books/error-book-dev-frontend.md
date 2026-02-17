@@ -41,3 +41,20 @@
 ❌ 操作成功后 `setMessage("成功")`，消息一直挂着直到下次操作
 ✅ 设置消息后加 `setTimeout(() => setMessage(null), 3000)` 自动清除，cleanup 里 `clearTimeout`
 > 不清除 = 用户以为还在处理中，或误以为是新消息。
+
+### DEV-12 多问题批量修复串行处理 + 不分类
+
+❌ 拿到 5 个体验问题逐个串行排查，空日志反复读，UX 问题先查后端
+✅ 先花 1 分钟分类（纯 CSS / 前端逻辑 / 后端 / 配置），同类并行处理；空文件只读一次；"操作后没反应"先查前端状态流转
+> 不分类 = 串行耗时翻倍。案例：DEV-BUG-13。
+
+---
+
+## 前端踩坑记录（续）
+
+#### DEV-BUG-13 M3 体验问题修复耗时过长
+
+- **场景**: 5 个体验问题（表单 UI / dropdown 搜索 / 购买切 tab / 颜色硬编码 / agent 不回复），耗时 ~30 分钟，应 ~15 分钟
+- **根因**: 未分类并行处理；空日志反复读；UX 问题误判为后端 bug
+- **修复**: 3 文件改动（App.css / WorkPanel.tsx / UserAvatar.tsx）；agent 不回复是配置问题
+- **详细**: [postmortem-dev-bug-13.md](../postmortems/postmortem-dev-bug-13.md)

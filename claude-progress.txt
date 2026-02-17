@@ -12,6 +12,12 @@
 
 ## 最近活动
 
+### 2026-02-17
+- M3 体验问题修复 5 项（App.css / WorkPanel.tsx / UserAvatar.tsx）
+  - 悬赏表单 UI 优化、Agent dropdown 搜索、购买后自动切背包 tab、颜色主题变量化
+  - Agent 不回消息 → 配置问题（model="none" + API key 空）
+- 经验沉淀：DEV-12（多问题批量修复先分类再并行）、DEV-BUG-13
+
 ### 2026-02-16
 - M2 Phase 6 完成：E2E 端到端验证 14/14 全绿
   - REST 场景 8/8：经济限制（零信用静默）、悬赏全生命周期、转账
