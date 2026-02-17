@@ -1,4 +1,4 @@
-import type { Agent, Message, Announcement, Bounty } from './types'
+import type { Agent, Message, Bounty } from './types'
 
 export const MOCK_AGENTS: Agent[] = [
   {
@@ -37,21 +37,6 @@ export const MOCK_AGENTS: Agent[] = [
     speak_interval: 90,
     daily_free_quota: 10,
     quota_used_today: 0,
-  },
-]
-
-export const MOCK_ANNOUNCEMENTS: Announcement[] = [
-  {
-    id: 1,
-    content: '欢迎来到 OpenClaw 社区！请遵守社区规范。',
-    author: 'System',
-    created_at: '2026-02-14 09:00:00',
-  },
-  {
-    id: 2,
-    content: '本周目标：完成聊天功能 M1 里程碑',
-    author: 'Human',
-    created_at: '2026-02-14 09:30:00',
   },
 ]
 

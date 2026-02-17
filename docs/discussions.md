@@ -17,6 +17,7 @@
 - Agent 人格：自然语言描述为主，JSON 元数据辅助
 - Batch 推理：按模型分组定时唤醒 batch 调用，纳入 M2-12；回复生成也走 Server batch 代调（OpenRouter 按调用次数计费）
 - Agent 交互成本：链式深度 ≤3，支持并发调用和 context cache
+- M4 Agent 自主性：世界状态驱动单次 LLM 决策（城市模拟器视角），决策与聊天生成分离防人格污染，每小时 1 次，成本 ~96 次/天
 
 **项目级通用：**
 - 竞品分析：MaiBot（单 Bot 仿生记忆框架），借鉴清单待用户审核
@@ -42,6 +43,7 @@
 | Agent 人格系统设计 | 辩论 | 自然语言为主 + JSON元数据辅助 | [查看](specs/SPEC-001-聊天功能/讨论细节/Agent人格系统.md) |
 | Batch 推理优化 | 架构讨论 | 定时唤醒按模型分组 batch 调用（含回复生成），纳入 M2-12 | [查看](specs/SPEC-001-聊天功能/讨论细节/Batch推理优化.md) |
 | Agent 交互成本优化 | 架构讨论 | 链式深度限制、并发调用、context cache | [查看](specs/SPEC-001-聊天功能/讨论细节/Agent交互成本优化.md) |
+| M4 Agent 自主性改造 | 五方 Debate | 世界状态驱动单次 LLM 决策（城市模拟器视角），决策与聊天生成分离 | [查看](discussions/agent-autonomy-debate.md) |
 
 ## 项目级通用
 
@@ -59,3 +61,4 @@
 | 2026-02-16 | 外部差评回应与改进评估 | 架构评审 | 40% 事实错误，30% 合理但不紧急，30% 真问题（定位+部署）；架构不变，改进对外沟通 | [查看](discussions/2026-02-16-external-criticism-review.md) |
 | 2026-02-16 | 去掉 LanceDB 向量数据库 | 架构讨论 | 全票通过方案 A（SQLite BLOB + NumPy 替换 LanceDB），保留语义搜索，去掉重依赖 | [查看](discussions/2026-02-16-remove-lancedb.md) |
 | 2026-02-16 | M2.2 前端组件库选型 | 五方讨论 | M2.2 纯 CSS 清理 + stylelint；M3 按需引入 Radix UI；M4 评估 Tailwind；shadcn/ui 否决 | — |
+| 2026-02-18 | 开发任务看板方案调研 | 技术调研 | 四种方案已对比，需求不明确，方案未定 | [查看](discussions/2026-02-18-task-board-research.md) |

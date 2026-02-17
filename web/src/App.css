@@ -418,30 +418,66 @@
   margin-bottom: 12px;
 }
 
-/* Announcement Panel */
-.announcement-panel {
+/* Activity Feed */
+.activity-feed {
   border-bottom: 1px solid var(--sidebar-divider);
+  padding: 16px;
 }
 
-.announcement-item {
-  padding: 8px 0;
+.activity-feed .panel-heading {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  margin: 0 0 12px;
+}
+
+.activity-empty {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.activity-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.activity-item {
+  padding: 6px 0;
   border-bottom: 1px solid var(--border-subtle);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--text-primary);
 }
 
-.announcement-item:last-child {
+.activity-item:last-child {
   border-bottom: none;
 }
 
-.announcement-content {
-  font-size: 0.85rem;
-  color: var(--text-primary);
-  line-height: 1.4;
+.activity-name {
+  font-weight: 600;
+  margin-right: 4px;
 }
 
-.announcement-meta {
+.activity-action {
+  color: var(--text-secondary);
+}
+
+.activity-reason {
+  color: var(--text-muted);
+  margin-left: 4px;
+}
+
+.activity-time {
+  display: block;
   font-size: 0.7rem;
   color: var(--text-muted);
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 /* Agent Status Panel */

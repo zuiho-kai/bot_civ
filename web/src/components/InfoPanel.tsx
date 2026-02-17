@@ -1,16 +1,17 @@
-import type { Agent, Announcement } from '../types'
-import { AnnouncementPanel } from './AnnouncementPanel'
+import type { Agent } from '../types'
+import type { ActivityItem } from './ActivityFeed'
+import { ActivityFeed } from './ActivityFeed'
 import { AgentStatusPanel } from './AgentStatusPanel'
 
 interface InfoPanelProps {
-  announcements: Announcement[]
   agents: Agent[]
+  activities: ActivityItem[]
 }
 
-export function InfoPanel({ announcements, agents }: InfoPanelProps) {
+export function InfoPanel({ agents, activities }: InfoPanelProps) {
   return (
     <div className="info-panel">
-      <AnnouncementPanel announcements={announcements} />
+      <ActivityFeed items={activities} />
       <AgentStatusPanel agents={agents} />
     </div>
   )

@@ -17,13 +17,6 @@ export interface Channel {
   name: string
 }
 
-export interface Announcement {
-  id: number
-  content: string
-  author: string
-  created_at: string
-}
-
 export interface Message {
   id: number
   agent_id: number
@@ -50,7 +43,7 @@ export interface WsNewMessage {
 export interface WsSystemEvent {
   type: 'system_event'
   data: {
-    event: 'agent_online' | 'agent_offline' | 'checkin' | 'purchase'
+    event: 'agent_online' | 'agent_offline' | 'checkin' | 'purchase' | 'agent_action'
     agent_id: number
     agent_name: string
     timestamp: string
@@ -58,6 +51,8 @@ export interface WsSystemEvent {
     reward?: number
     item_name?: string
     price?: number
+    action?: 'checkin' | 'purchase' | 'chat' | 'rest'
+    reason?: string
   }
 }
 

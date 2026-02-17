@@ -101,3 +101,26 @@
 ❌ "把X删掉" → 删掉所有相关存储；用户意图可能只是"不要明文存"
 ✅ 涉及"删除"的指令先确认范围：删功能 vs 删某个存储位置
 > 详见 [postmortem-dev-bug-10.md](../postmortems/postmortem-dev-bug-10.md)
+
+### DEV-14 新功能编码不复用已有 pattern → Code Review 出 P1/P2
+
+❌ 写 `_execute_chats` 时用串行 `for + await sleep`，项目里已有并行 `create_task` 模式（`hourly_wakeup_loop`）
+❌ 写 SYSTEM_PROMPT 时擅自偏离 TDD（checkin params 加了 job_id），没走设计变更
+❌ try/except 中引用变量未做防御性初始化，异常路径可能 NameError
+❌ 写完代码直接提交 Review，没有逐条对照 TDD 自查
+✅ 写新函数前 grep 同类实现，复用项目已有 pattern
+✅ 写完后逐条对照 TDD 自查：签名、事件格式、prompt 内容、容错场景
+✅ 每个 except 分支走一遍变量可达性分析
+✅ 不擅自偏离 TDD，改进想法先更新设计文档再改代码
+
+**编码前自查清单（新增）**:
+1. grep 同类功能的已有实现，确认项目 pattern（延迟发送、广播、session 管理）
+2. 对照 TDD 逐项检查：函数签名、消息格式、prompt 内容、容错边界
+3. 每个 try/except 块检查异常路径的变量可达性
+4. 不偏离 TDD，需要改设计先更新文档
+5. 替换组件/模块时，grep 旧名称的所有引用，逐个清除（文件、import、类型、mock 数据、CSS）
+6. 对照 TDD 的用户故事编号逐个勾选，不要凭感觉"差不多了"
+7. 生成 id/key 时考虑并发和碰撞：避免 Date.now() 裸用，优先用自增计数器或负数隔离
+8. 时间相关 UI 考虑"用户停留 30 分钟后"的表现
+
+> 根因：只关注"功能正确"忽略"模式一致"和"文档一致"。详见 [postmortem-dev-bug-11.md](../postmortems/postmortem-dev-bug-11.md)

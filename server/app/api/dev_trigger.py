@@ -23,6 +23,7 @@ from .chat import (
 )
 from ..services.agent_runner import runner_manager
 from ..services.economy_service import economy_service
+from ..services import autonomy_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/dev", tags=["dev"])
@@ -214,3 +215,10 @@ async def dev_set_credits(agent_id: int, credits: int, quota_used: int | None = 
         raise HTTPException(404, "Agent not found")
     await db.commit()
     return {"ok": True, "agent_id": agent_id, "credits": credits}
+
+
+@router.post("/trigger-autonomy")
+async def trigger_autonomy():
+    """手动触发一次 autonomy tick（跳过定时器等待）"""
+    await autonomy_service.tick()
+    return {"ok": True}

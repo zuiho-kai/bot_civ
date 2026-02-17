@@ -19,6 +19,7 @@ from .memory_service import memory_service
 from .wakeup_service import WakeupService
 from .agent_runner import runner_manager
 from .economy_service import economy_service
+from . import autonomy_service
 
 logger = logging.getLogger(__name__)
 
@@ -167,3 +168,24 @@ async def hourly_wakeup_loop():
 
         except Exception as e:
             logger.error("Hourly wakeup failed: %s", e, exc_info=True)
+
+
+AUTONOMY_INTERVAL = 3600  # 1 小时
+
+
+async def autonomy_loop():
+    """Agent 自主行为定时循环。
+
+    - 启动后等 60s（让系统初始化完成）
+    - 每小时触发一次 autonomy_service.tick()
+    - 加 0-120s 随机抖动，避免与 hourly_wakeup_loop 完全同步
+    """
+    await asyncio.sleep(60)
+    while True:
+        jitter = random.randint(0, 120)
+        await asyncio.sleep(jitter)
+        try:
+            await autonomy_service.tick()
+        except Exception as e:
+            logger.error("autonomy_loop failed: %s", e, exc_info=True)
+        await asyncio.sleep(AUTONOMY_INTERVAL - jitter)

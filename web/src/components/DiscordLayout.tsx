@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { Agent, Message, WsIncoming } from '../types'
-import { MOCK_ANNOUNCEMENTS } from '../mock-data'
 import { fetchAgents, fetchMessages } from '../api'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { useTheme } from '../hooks/useTheme'
+import { useActivityFeed } from './ActivityFeed'
 import { ServerRail } from './ServerRail'
 import { ChannelSidebar } from './ChannelSidebar'
 import { InfoPanel } from './InfoPanel'
@@ -13,6 +13,7 @@ import { BountyBoard } from '../pages/BountyBoard'
 import { WorkPanel } from '../pages/WorkPanel'
 
 const HUMAN_AGENT_ID = 0
+let _sysMsgSeq = 0
 
 type View = 'chat' | 'agents' | 'bounties' | 'work'
 
@@ -22,6 +23,7 @@ export function DiscordLayout() {
   const [onlineIds, setOnlineIds] = useState<Set<number>>(new Set())
   const [activeChannel, setActiveChannel] = useState('general')
   const [view, setView] = useState<View>('chat')
+  const { items: activities, pushActivity } = useActivityFeed()
   useTheme()
 
   useEffect(() => {
@@ -48,8 +50,41 @@ export function DiscordLayout() {
       if (msg.data.event === 'checkin' || msg.data.event === 'purchase') {
         fetchAgents().then(setAgents).catch(console.error)
       }
+      // agent_action 事件 → 推送到 ActivityFeed + 聊天区系统消息
+      if (msg.data.event === 'agent_action' && msg.data.action) {
+        pushActivity({
+          agent_id: msg.data.agent_id,
+          agent_name: msg.data.agent_name,
+          action: msg.data.action,
+          reason: msg.data.reason || '',
+          timestamp: msg.data.timestamp,
+        })
+        // 插入聊天区系统消息
+        const actionLabels: Record<string, string> = {
+          checkin: '打卡上班',
+          purchase: '购买商品',
+          chat: '发起聊天',
+          rest: '正在休息',
+        }
+        const label = actionLabels[msg.data.action] || msg.data.action
+        const sysMsg: Message = {
+          id: -(++_sysMsgSeq),
+          agent_id: msg.data.agent_id,
+          agent_name: msg.data.agent_name,
+          sender_type: 'system',
+          message_type: 'system',
+          content: `${msg.data.agent_name} ${label}`,
+          mentions: [],
+          created_at: msg.data.timestamp,
+        }
+        setMessages(prev => [...prev, sysMsg])
+        // checkin/purchase 行为也刷新 agent 列表
+        if (msg.data.action === 'checkin' || msg.data.action === 'purchase') {
+          fetchAgents().then(setAgents).catch(console.error)
+        }
+      }
     }
-  }, [])
+  }, [pushActivity])
 
   const { send, connected } = useWebSocket(HUMAN_AGENT_ID, handleWsMessage)
 
@@ -95,7 +130,7 @@ export function DiscordLayout() {
           <BountyBoard agents={agents} />
         )}
       </div>
-      <InfoPanel announcements={MOCK_ANNOUNCEMENTS} agents={agents} />
+      <InfoPanel agents={agents} activities={activities} />
     </div>
   )
 }
