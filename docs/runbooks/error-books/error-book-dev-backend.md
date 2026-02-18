@@ -8,9 +8,9 @@
 
 ### DEV-10 SQLite + async 必须用 BEGIN IMMEDIATE
 
-❌ 默认 `BEGIN DEFERRED`，多连接同时持有 SHARED 锁升级时死锁
-✅ 用 `BEGIN IMMEDIATE` 事件监听器，合并 fire-and-forget 写入到同一事务
-> fire-and-forget 数据库写入是反模式。不要用 asyncio.Lock 序列化 aiosqlite（SQL 在后台线程执行）。案例：DEV-BUG-7。
+❌ 默认 `BEGIN DEFERRED`，多连接同时持有 SHARED 锁升级时死锁；fire-and-forget 写入是反模式
+✅ 用 `BEGIN IMMEDIATE` 事件监听器，合并写入到同一事务；不要用 asyncio.Lock 序列化 aiosqlite
+> 案例：DEV-BUG-7。详见 [postmortem-dev-bug-7.md](../postmortems/postmortem-dev-bug-7.md)
 
 ### DEV-11 跨模块语义假设不一致（"在线"定义）
 
@@ -67,8 +67,7 @@
 #### DEV-BUG-7 SQLite 并发锁定导致测试死循环（耗时 2h+，200 刀）
 
 - **场景**: M2 Phase 1 完整测试，多个 async task 同时写 SQLite
-- **根因**: SQLite 默认 `BEGIN DEFERRED`，两个连接同时持有 SHARED 锁升级时死锁
-- **修复**: `BEGIN IMMEDIATE` 事件监听器 + 合并 fire-and-forget 写入到同一事务 + Windows UTF-8
+- **根因 & 修复**: 见流程规则 DEV-10
 - **详细复盘**: [postmortem-dev-bug-7.md](../postmortems/postmortem-dev-bug-7.md)
 
 #### DEV-BUG-8 WebSocket 广播 e2e 测试收不到 Agent 回复

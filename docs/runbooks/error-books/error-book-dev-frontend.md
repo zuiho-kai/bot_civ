@@ -25,14 +25,14 @@
 #### DEV-BUG-10 React StrictMode 双挂载导致 WebSocket 消息重复
 
 - **场景**: 开发模式下聊天消息每条显示两次
-- **根因**: React StrictMode 双挂载 useEffect，创建两个 WebSocket 连接，每条广播收两次
-- **修复**: ① useWebSocket hook 加连接守卫 ② DiscordLayout 加 msg.data.id 去重
+- **根因 & 修复**: 见流程规则 DEV-9
+- **修复文件**: useWebSocket hook 加连接守卫 + DiscordLayout 加 msg.data.id 去重
 
 #### DEV-BUG-11 新增 UI 组件颜色硬编码，不跟主题走
 
-- **场景**: 信用点徽章用固定金色 `#f0b232`，@提及 popup 的 active 状态用 `--channel-active`（暗色语义变量）
-- **根因**: 新增组件时只在一个主题下目测，没有切换主题验证
-- **修复**: 信用点用 `--credits-text` / `--credits-bg` 主题变量；popup active 改用 `--accent-subtle` / `--accent-primary`
+- **场景**: 信用点徽章用固定金色 `#f0b232`，@提及 popup 用暗色语义变量
+- **根因 & 修复**: 见流程规则 DEV-8
+- **修复文件**: 信用点用 `--credits-text` / `--credits-bg`；popup active 改用 `--accent-subtle` / `--accent-primary`
 
 ### DEV-10 useEffect 依赖放 render 中新建的数组/对象 → 无限循环
 
