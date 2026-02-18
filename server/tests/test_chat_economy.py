@@ -62,7 +62,7 @@ async def test_wakeup_with_quota_allows_reply(db, setup_data):
     agent, msg = setup_data
 
     mock_runner = MagicMock()
-    mock_runner.generate_reply = AsyncMock(return_value=("Hi there!", None))
+    mock_runner.generate_reply = AsyncMock(return_value=("Hi there!", None, []))
 
     with (
         patch("app.api.chat.async_session", return_value=_make_context_manager(db)),
@@ -100,7 +100,7 @@ async def test_wakeup_no_quota_skips_reply(db, setup_data):
     _agent, msg = setup_data
 
     mock_runner = MagicMock()
-    mock_runner.generate_reply = AsyncMock(return_value=("should not happen", None))
+    mock_runner.generate_reply = AsyncMock(return_value=("should not happen", None, []))
 
     with (
         patch("app.api.chat.async_session", return_value=_make_context_manager(db)),
@@ -142,7 +142,7 @@ async def test_deduct_after_successful_reply(db, setup_data):
         call_order.append("deduct")
 
     mock_runner = MagicMock()
-    mock_runner.generate_reply = AsyncMock(return_value=("reply text", None))
+    mock_runner.generate_reply = AsyncMock(return_value=("reply text", None, []))
 
     with (
         patch("app.api.chat.async_session", return_value=_make_context_manager(db)),

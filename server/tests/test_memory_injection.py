@@ -73,7 +73,7 @@ async def test_generate_reply_with_memory_injection():
     p_resolve, p_openai = _patch_llm_success()
     with p_resolve, p_openai as mock_openai_cls:
         with patch(MEMORY_SEARCH, new_callable=AsyncMock, return_value=memories):
-            reply, usage = await runner.generate_reply(HISTORY, db=db)
+            reply, usage, _mem_ids = await runner.generate_reply(HISTORY, db=db)
 
     assert reply is not None
 
@@ -93,7 +93,7 @@ async def test_generate_reply_without_db():
     p_resolve, p_openai = _patch_llm_success("无记忆回复")
     with p_resolve, p_openai as mock_openai_cls:
         with patch(MEMORY_SEARCH, new_callable=AsyncMock) as mock_search:
-            reply, usage = await runner.generate_reply(HISTORY, db=None)
+            reply, usage, _mem_ids = await runner.generate_reply(HISTORY, db=None)
 
     assert reply == "无记忆回复"
     mock_search.assert_not_awaited()
@@ -108,7 +108,7 @@ async def test_memory_injection_failure_does_not_block():
     p_resolve, p_openai = _patch_llm_success("正常回复")
     with p_resolve, p_openai:
         with patch(MEMORY_SEARCH, new_callable=AsyncMock, side_effect=RuntimeError("search boom")):
-            reply, usage = await runner.generate_reply(HISTORY, db=db)
+            reply, usage, _mem_ids = await runner.generate_reply(HISTORY, db=db)
 
     assert reply == "正常回复"
 
@@ -122,7 +122,7 @@ async def test_memory_injection_empty_results():
     p_resolve, p_openai = _patch_llm_success()
     with p_resolve, p_openai as mock_openai_cls:
         with patch(MEMORY_SEARCH, new_callable=AsyncMock, return_value=[]):
-            reply, usage = await runner.generate_reply(HISTORY, db=db)
+            reply, usage, _mem_ids = await runner.generate_reply(HISTORY, db=db)
 
     assert reply is not None
 

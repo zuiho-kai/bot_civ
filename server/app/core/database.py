@@ -42,13 +42,15 @@ async def _migrate_bot_token(conn):
 
 
 async def _migrate_satiety_mood(conn):
-    """M5 迁移：给 agents 表加 satiety/mood 字段"""
+    """M5 迁移：给 agents 表加 satiety/mood/stamina 字段"""
     result = await conn.execute(text("PRAGMA table_info(agents)"))
     columns = [row[1] for row in result.fetchall()]
     if "satiety" not in columns:
         await conn.execute(text("ALTER TABLE agents ADD COLUMN satiety INTEGER DEFAULT 100"))
     if "mood" not in columns:
         await conn.execute(text("ALTER TABLE agents ADD COLUMN mood INTEGER DEFAULT 80"))
+    if "stamina" not in columns:
+        await conn.execute(text("ALTER TABLE agents ADD COLUMN stamina INTEGER DEFAULT 100"))
 
 
 async def init_db():

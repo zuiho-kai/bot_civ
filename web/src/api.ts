@@ -1,4 +1,4 @@
-import type { Agent, Message, Bounty, Job, CheckInResult, ShopItem, PurchaseResult, AgentItem, MemoryListResponse, MemoryStats, CityOverview, Building, ProductionLog, WorkerResult, EatResult } from './types'
+import type { Agent, Message, Bounty, Job, CheckInResult, ShopItem, PurchaseResult, AgentItem, Memory, MemoryListResponse, MemoryStats, CityOverview, Building, ProductionLog, WorkerResult, EatResult } from './types'
 import { MOCK_AGENTS, MOCK_MESSAGES, MOCK_BOUNTIES } from './mock-data'
 
 const BASE = '/api'
@@ -236,17 +236,17 @@ export async function fetchMemories(params: {
   if (await useMock()) return { items: [], total: 0 }
   const q = new URLSearchParams()
   if (params.agent_id !== undefined) q.set('agent_id', String(params.agent_id))
-  if (params.type) q.set('type', params.type)
+  if (params.type) q.set('memory_type', params.type)
   q.set('page', String(params.page))
   q.set('page_size', String(params.page_size))
-  const res = await fetch(`${BASE}/memory/?${q}`)
+  const res = await fetch(`${BASE}/memories?${q}`)
   if (!res.ok) throw new Error(`fetchMemories: ${res.status}`)
   return res.json()
 }
 
 export async function fetchMemoryStats(agentId: number): Promise<MemoryStats> {
-  if (await useMock()) return { short_count: 0, long_count: 0, public_count: 0, total_access_count: 0 }
-  const res = await fetch(`${BASE}/memory/stats?agent_id=${agentId}`)
+  if (await useMock()) return { total: 0, by_type: {} }
+  const res = await fetch(`${BASE}/memories/stats?agent_id=${agentId}`)
   if (!res.ok) throw new Error(`fetchMemoryStats: ${res.status}`)
   return res.json()
 }
@@ -255,21 +255,21 @@ export async function fetchMemoryStats(agentId: number): Promise<MemoryStats> {
 
 export async function fetchCityOverview(city: string): Promise<CityOverview> {
   if (await useMock()) return { resources: [], buildings: [], agents: [] }
-  const res = await fetch(`${BASE}/city/${encodeURIComponent(city)}/overview`)
+  const res = await fetch(`${BASE}/cities/${encodeURIComponent(city)}/overview`)
   if (!res.ok) throw new Error(`fetchCityOverview: ${res.status}`)
   return res.json()
 }
 
 export async function fetchBuildingDetail(city: string, buildingId: number): Promise<Building> {
   if (await useMock()) throw new Error('mock_mode')
-  const res = await fetch(`${BASE}/city/${encodeURIComponent(city)}/buildings/${buildingId}`)
+  const res = await fetch(`${BASE}/cities/${encodeURIComponent(city)}/buildings/${buildingId}`)
   if (!res.ok) throw new Error(`fetchBuildingDetail: ${res.status}`)
   return res.json()
 }
 
 export async function assignWorker(city: string, buildingId: number, agentId: number): Promise<WorkerResult> {
   if (await useMock()) return { ok: false, reason: 'mock_mode' }
-  const res = await fetch(`${BASE}/city/${encodeURIComponent(city)}/buildings/${buildingId}/assign`, {
+  const res = await fetch(`${BASE}/cities/${encodeURIComponent(city)}/buildings/${buildingId}/workers`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ agent_id: agentId }),
@@ -280,29 +280,60 @@ export async function assignWorker(city: string, buildingId: number, agentId: nu
 
 export async function removeWorker(city: string, buildingId: number, agentId: number): Promise<WorkerResult> {
   if (await useMock()) return { ok: false, reason: 'mock_mode' }
-  const res = await fetch(`${BASE}/city/${encodeURIComponent(city)}/buildings/${buildingId}/remove`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ agent_id: agentId }),
+  const res = await fetch(`${BASE}/cities/${encodeURIComponent(city)}/buildings/${buildingId}/workers/${agentId}`, {
+    method: 'DELETE',
   })
   if (!res.ok) throw new Error(`removeWorker: ${res.status}`)
   return res.json()
 }
 
 export async function eatFood(agentId: number): Promise<EatResult> {
-  if (await useMock()) return { ok: false, reason: 'mock_mode', satiety: 0, mood: 0 }
-  const res = await fetch(`${BASE}/city/eat`, {
+  if (await useMock()) return { ok: false, reason: 'mock_mode', satiety: 0, mood: 0, stamina: 0 }
+  const res = await fetch(`${BASE}/agents/${agentId}/eat`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ agent_id: agentId }),
   })
   if (!res.ok) throw new Error(`eatFood: ${res.status}`)
   return res.json()
 }
 
+export async function createMemory(data: {
+  agent_id: number
+  memory_type: string
+  content: string
+}): Promise<Memory> {
+  if (await useMock()) return { id: Date.now(), agent_id: data.agent_id, memory_type: data.memory_type as Memory['memory_type'], content: data.content, access_count: 0, expires_at: null, created_at: new Date().toISOString() }
+  const res = await fetch(`${BASE}/memories`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw new Error(`createMemory: ${res.status}`)
+  return res.json()
+}
+
+export async function updateMemory(memoryId: number, data: {
+  content?: string
+  memory_type?: string
+}): Promise<Memory> {
+  if (await useMock()) throw new Error('mock_mode')
+  const res = await fetch(`${BASE}/memories/${memoryId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw new Error(`updateMemory: ${res.status}`)
+  return res.json()
+}
+
+export async function deleteMemory(memoryId: number): Promise<void> {
+  if (await useMock()) return
+  const res = await fetch(`${BASE}/memories/${memoryId}`, { method: 'DELETE' })
+  if (!res.ok) throw new Error(`deleteMemory: ${res.status}`)
+}
+
 export async function fetchProductionLogs(city: string, limit = 20): Promise<ProductionLog[]> {
   if (await useMock()) return []
-  const res = await fetch(`${BASE}/city/${encodeURIComponent(city)}/logs?limit=${limit}`)
+  const res = await fetch(`${BASE}/cities/${encodeURIComponent(city)}/production-logs?limit=${limit}`)
   if (!res.ok) throw new Error(`fetchProductionLogs: ${res.status}`)
   return res.json()
 }

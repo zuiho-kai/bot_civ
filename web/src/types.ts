@@ -12,6 +12,7 @@ export interface Agent {
   activity?: string
   satiety: number
   mood: number
+  stamina: number
 }
 
 export interface Channel {
@@ -53,7 +54,7 @@ export interface WsSystemEvent {
     reward?: number
     item_name?: string
     price?: number
-    action?: 'checkin' | 'purchase' | 'chat' | 'rest' | 'farm_work' | 'mill_work' | 'eat'
+    action?: 'checkin' | 'purchase' | 'chat' | 'rest' | 'farm_work' | 'mill_work' | 'eat' | 'assign_building' | 'unassign_building'
     reason?: string
   }
 }
@@ -125,14 +126,12 @@ export interface Memory {
   access_count: number
   expires_at: string | null
   created_at: string
-  updated_at: string
 }
 
 export interface MemoryStats {
-  short_count: number
-  long_count: number
-  public_count: number
-  total_access_count: number
+  agent_id?: number
+  total: number
+  by_type: Record<string, number>
 }
 
 export interface MemoryListResponse {
@@ -167,6 +166,8 @@ export interface CityAgentStatus {
   name: string
   satiety: number
   mood: number
+  stamina: number
+  resources: { resource_type: string; quantity: number }[]
 }
 
 export interface CityOverview {
@@ -195,4 +196,5 @@ export interface EatResult {
   reason: string
   satiety: number
   mood: number
+  stamina: number
 }

@@ -67,7 +67,7 @@ async def test_batch_generate_single_agent():
             results = await mgr.batch_generate(agents_info)
 
     assert 1 in results
-    reply, usage = results[1]
+    reply, usage, _mem_ids = results[1]
     assert reply == "Alice的回复"
     assert usage is not None
 
@@ -150,8 +150,8 @@ async def test_batch_generate_partial_failure():
 
     # 一个失败一个成功（不断言具体哪个 agent 失败，因为 gather 执行顺序不保证）
     assert len(results) == 2
-    failed = [aid for aid, (r, _) in results.items() if r is None]
-    succeeded = [aid for aid, (r, _) in results.items() if r is not None]
+    failed = [aid for aid, (r, _, _m) in results.items() if r is None]
+    succeeded = [aid for aid, (r, _, _m) in results.items() if r is not None]
     assert len(failed) == 1
     assert len(succeeded) == 1
 

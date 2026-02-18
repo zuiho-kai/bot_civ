@@ -16,11 +16,12 @@ from sqlalchemy.orm import joinedload
 
 from ..core.config import resolve_model
 from ..core.database import async_session
-from ..models import Agent, Message, Job, CheckIn, VirtualItem, AgentItem
+from ..models import Agent, Message, Job, CheckIn, VirtualItem, AgentItem, Building, BuildingWorker, AgentResource
 from .work_service import work_service
 from .shop_service import shop_service
 from .economy_service import economy_service
 from .agent_runner import runner_manager
+from .city_service import assign_worker, remove_worker, eat_food, get_agent_resources
 
 logger = logging.getLogger(__name__)
 
@@ -33,14 +34,16 @@ AUTONOMY_MODEL = "wakeup-model"  # 复用免费小模型做决策
 SYSTEM_PROMPT = """你是虚拟城市模拟器。根据世界状态为每个居民决定行为。
 
 规则：
-1. 行为：checkin（打卡）、purchase（购买）、chat（聊天）、rest（休息）
+1. 行为：checkin（打卡）、purchase（购买）、chat（聊天）、rest（休息）、assign_building（应聘建筑）、unassign_building（离职）、eat（吃饭）
 2. 已打卡不能重复；余额不足不能购买；行为符合性格
 3. rest 是合理选择，不必所有人都行动
+4. 饱腹度低时优先 eat；体力低时优先 rest；无工作时考虑 assign_building
+5. assign_building 需要 building_id；unassign_building 无需参数（自动查找当前建筑）
 
 直接输出纯 JSON 数组，不要解释，不要 markdown，不要思考过程。示例：
-[{"agent_id": 1, "action": "checkin", "params": {}, "reason": "上班赚钱"}]
+[{"agent_id": 1, "action": "assign_building", "params": {"building_id": 3}, "reason": "去官府田工作赚面粉"}]
 
-params: checkin={}, purchase={"item_id": <int>}, chat={}, rest={}"""
+params: checkin={}, purchase={"item_id": <int>}, chat={}, rest={}, assign_building={"building_id": <int>}, unassign_building={}, eat={}"""
 
 
 async def build_world_snapshot(db: AsyncSession) -> str:
@@ -70,15 +73,35 @@ async def build_world_snapshot(db: AsyncSession) -> str:
     for aid, item_name in items_result.all():
         agent_items.setdefault(aid, []).append(item_name)
 
-    # 4. 构建居民状态
+    # 4. 构建居民状态（含三维属性 + 个人资源 + 工作状态）
+    # 预加载工作状态
+    worker_result = await db.execute(
+        select(BuildingWorker.agent_id, Building.id, Building.name, Building.building_type)
+        .join(Building, BuildingWorker.building_id == Building.id)
+    )
+    agent_work: dict[int, dict] = {}
+    for aid, bid, bname, btype in worker_result.all():
+        agent_work[aid] = {"building_id": bid, "building_name": bname, "building_type": btype}
+
+    # 预加载个人资源
+    res_result = await db.execute(select(AgentResource))
+    agent_res_map: dict[int, list[str]] = {}
+    for ar in res_result.scalars().all():
+        agent_res_map.setdefault(ar.agent_id, []).append(f"{ar.resource_type}={ar.quantity}")
+
     agent_lines = []
     for a in agents:
         checked = "已打卡" if a.id in checked_in_agents else "未打卡"
         items = ", ".join(agent_items.get(a.id, [])) or "无"
         persona_brief = a.persona[:60] + ("…" if len(a.persona) > 60 else "")
+        work_info = agent_work.get(a.id)
+        work_str = f"[在岗：{work_info['building_name']}]" if work_info else "无业"
+        res_str = ", ".join(agent_res_map.get(a.id, [])) or "无"
+        stamina_tag = " [体力不足，无法工作]" if a.stamina < 20 else ""
         agent_lines.append(
             f"- ID={a.id} {a.name}: {persona_brief} | "
-            f"余额={a.credits} | 今日{checked} | 物品=[{items}]"
+            f"余额={a.credits} | 饱腹={a.satiety} 心情={a.mood} 体力={a.stamina}{stamina_tag} | "
+            f"今日{checked} | {work_str} | 资源=[{res_str}] | 物品=[{items}]"
         )
 
     # 5. 最近 10 条聊天
@@ -109,7 +132,20 @@ async def build_world_snapshot(db: AsyncSession) -> str:
         for i in shop_items
     ]
 
-    # 8. 上一轮行为
+    # 8. 建筑列表
+    building_result = await db.execute(select(Building))
+    building_lines = []
+    for b in building_result.scalars().all():
+        w_count_result = await db.execute(
+            select(sa_func.count()).select_from(BuildingWorker)
+            .where(BuildingWorker.building_id == b.id)
+        )
+        w_count = w_count_result.scalar() or 0
+        building_lines.append(
+            f"- ID={b.id} {b.name}({b.building_type}): {w_count}/{b.max_workers}人"
+        )
+
+    # 9. 上一轮行为
     async with _round_log_lock:
         last_snapshot = list(_last_round_log)
     last_lines = [
@@ -133,6 +169,9 @@ async def build_world_snapshot(db: AsyncSession) -> str:
 
 == 商店商品 ==
 {chr(10).join(shop_lines)}
+
+== 城市建筑 ==
+{chr(10).join(building_lines)}
 
 请为每个居民决定下一步行为。"""
 
@@ -199,7 +238,7 @@ async def decide(snapshot: str) -> list[dict]:
                 continue
             if "agent_id" not in d or "action" not in d:
                 continue
-            if d["action"] not in ("checkin", "purchase", "chat", "rest"):
+            if d["action"] not in ("checkin", "purchase", "chat", "rest", "assign_building", "unassign_building", "eat"):
                 d["action"] = "rest"
             valid.append(d)
 
@@ -291,6 +330,46 @@ async def execute_decisions(decisions: list[dict], db: AsyncSession) -> dict:
                 else:
                     logger.info("Autonomy chat quota denied for %s", agent_name)
                     stats["skipped"] += 1
+
+            elif action == "assign_building":
+                building_id = params.get("building_id")
+                if building_id:
+                    res = await assign_worker("长安", building_id, aid, db)
+                    if res["ok"]:
+                        stats["success"] += 1
+                        await _broadcast_action(agent_name, aid, "assign_building", reason)
+                    else:
+                        logger.info("Autonomy assign_building failed for %s: %s", agent_name, res["reason"])
+                        stats["failed"] += 1
+                else:
+                    stats["failed"] += 1
+
+            elif action == "unassign_building":
+                # TDD: 自动查找 agent 当前所在建筑，不需要 LLM 传 building_id
+                bw_result = await db.execute(
+                    select(BuildingWorker).where(BuildingWorker.agent_id == aid)
+                )
+                bw = bw_result.scalar()
+                if bw:
+                    res = await remove_worker("长安", bw.building_id, aid, db)
+                    if res["ok"]:
+                        stats["success"] += 1
+                        await _broadcast_action(agent_name, aid, "unassign_building", reason)
+                    else:
+                        logger.info("Autonomy unassign_building failed for %s: %s", agent_name, res["reason"])
+                        stats["failed"] += 1
+                else:
+                    logger.info("Autonomy unassign_building: %s not assigned to any building", agent_name)
+                    stats["failed"] += 1
+
+            elif action == "eat":
+                res = await eat_food(aid, db)
+                if res["ok"]:
+                    stats["success"] += 1
+                    await _broadcast_action(agent_name, aid, "eat", reason)
+                else:
+                    logger.info("Autonomy eat failed for %s: %s", agent_name, res["reason"])
+                    stats["failed"] += 1
 
             round_log.append({"agent_id": aid, "agent_name": agent_name, "action": action, "reason": reason})
 

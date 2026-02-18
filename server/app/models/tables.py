@@ -39,6 +39,7 @@ class Agent(Base):
     bot_token = Column(String(64), unique=True, nullable=True)  # Bot 接入凭证 (oc_ 前缀)
     satiety = Column(Integer, default=100)  # 饱腹度 0-100
     mood = Column(Integer, default=80)  # 心情 0-100
+    stamina = Column(Integer, default=100)  # 体力 0-100
     created_at = Column(DateTime, server_default=func.now())
 
     memories = relationship("Memory", back_populates="agent")

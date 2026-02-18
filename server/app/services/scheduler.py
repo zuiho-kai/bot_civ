@@ -72,6 +72,13 @@ async def scheduler_loop():
         except Exception as e:
             logger.error("Memory cleanup failed: %s", e)
         try:
+            from .city_service import daily_attribute_decay
+            async with async_session() as db:
+                await daily_attribute_decay(db)
+            logger.info("Daily attribute decay completed")
+        except Exception as e:
+            logger.error("Daily attribute decay failed: %s", e)
+        try:
             from .city_service import production_tick
             async with async_session() as db:
                 await production_tick("长安", db)

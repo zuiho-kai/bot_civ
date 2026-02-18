@@ -3,7 +3,7 @@ import { useState, useCallback, useEffect } from 'react'
 export interface ActivityItem {
   agent_id: number
   agent_name: string
-  action: 'checkin' | 'purchase' | 'chat' | 'rest'
+  action: 'checkin' | 'purchase' | 'chat' | 'rest' | 'assign_building' | 'unassign_building' | 'eat'
   reason: string
   timestamp: string
 }
@@ -15,6 +15,9 @@ const ACTION_LABELS: Record<ActivityItem['action'], string> = {
   purchase: '购买商品',
   chat: '发起聊天',
   rest: '正在休息',
+  assign_building: '分配到建筑',
+  unassign_building: '离开建筑',
+  eat: '进食',
 }
 
 function formatRelativeTime(ts: string): string {

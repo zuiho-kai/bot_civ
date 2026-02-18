@@ -13,7 +13,7 @@ import './CityPanel.css'
 const CITY = '长安'
 const RESOURCE_ICONS: Record<string, string> = { wheat: '🌾', flour: '🫓' }
 const RESOURCE_NAMES: Record<string, string> = { wheat: '小麦', flour: '面粉' }
-const BUILDING_ICONS: Record<string, string> = { farm: '🌾', mill: '⚙️' }
+const BUILDING_ICONS: Record<string, string> = { farm: '🌾', mill: '⚙️', gov_farm: '🏛️' }
 
 function barColor(value: number): string {
   if (value > 60) return 'green'
@@ -132,7 +132,7 @@ export function CityPanel({ agents }: CityPanelProps) {
     try {
       const result: EatResult = await eatFood(selectedAgentId)
       if (result.ok) {
-        setEatMsg(`进食成功 - 饱腹度: ${result.satiety}, 心情: ${result.mood}`)
+        setEatMsg(`进食成功 - 饱腹度: ${result.satiety}, 心情: ${result.mood}, 体力: ${result.stamina}`)
         loadOverview()
       } else {
         setEatErr(result.reason)
@@ -234,6 +234,16 @@ export function CityPanel({ agents }: CityPanelProps) {
                   </div>
                   <span className="cp-bar-value">{a.mood}</span>
                 </div>
+                <div className="cp-bar-row">
+                  <span className="cp-bar-label">体力</span>
+                  <div className="cp-bar-track">
+                    <div
+                      className={`cp-bar-fill ${barColor(a.stamina)}`}
+                      style={{ width: `${a.stamina}%` }}
+                    />
+                  </div>
+                  <span className="cp-bar-value">{a.stamina}</span>
+                </div>
               </div>
             </div>
           ))}
@@ -253,8 +263,12 @@ export function CityPanel({ agents }: CityPanelProps) {
     const availableAgents = agents.filter(a => !workerIds.has(a.id))
 
     const prodDesc = selectedBuilding.building_type === 'farm'
-      ? '每天产出 10 小麦/人'
-      : '每天消耗 5 小麦，产出 3 面粉/人'
+      ? '每天产出 10 小麦/人（需体力>=20，消耗15体力）'
+      : selectedBuilding.building_type === 'mill'
+      ? '每天消耗 5 小麦，产出 3 面粉/人（需体力>=20，消耗15体力）'
+      : selectedBuilding.building_type === 'gov_farm'
+      ? '每天直接产出 5 面粉/人（需体力>=20，消耗15体力）'
+      : '无生产功能'
 
     return (
       <div className="city-panel">
@@ -390,7 +404,28 @@ export function CityPanel({ agents }: CityPanelProps) {
               </div>
               <span className="cp-status-value">{agent.mood}</span>
             </div>
+            <div className="cp-status-row">
+              <span className="cp-status-label">体力</span>
+              <div className="cp-status-track">
+                <div
+                  className={`cp-status-fill ${barColor(agent.stamina)}`}
+                  style={{ width: `${agent.stamina}%` }}
+                />
+              </div>
+              <span className="cp-status-value">{agent.stamina}</span>
+            </div>
           </div>
+
+          {/* 个人资源 */}
+          {agent.resources && agent.resources.length > 0 && (
+            <div className="cp-agent-resources">
+              {agent.resources.map(r => (
+                <span key={r.resource_type} className="cp-agent-res-item">
+                  {RESOURCE_ICONS[r.resource_type] ?? '📦'} {RESOURCE_NAMES[r.resource_type] ?? r.resource_type}: {r.quantity}
+                </span>
+              ))}
+            </div>
+          )}
 
           <div className="cp-agent-work">
             当前工作: {workBuilding

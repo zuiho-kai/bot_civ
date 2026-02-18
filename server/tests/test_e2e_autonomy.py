@@ -243,7 +243,7 @@ async def test_e2e_autonomy_chat(client: AsyncClient):
             "completion_tokens": 10,
             "total_tokens": 60,
             "latency_ms": 100,
-        })
+        }, [])
     }
 
     with p_resolve, p_openai, \

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { Agent, Memory, MemoryStats } from '../types'
-import { fetchMemories, fetchMemoryStats } from '../api'
+import { fetchMemories, fetchMemoryStats, createMemory, updateMemory, deleteMemory } from '../api'
 import './MemoryAdmin.css'
 
 const PAGE_SIZE = 20
@@ -28,6 +28,15 @@ export function MemoryAdmin({ agents }: MemoryAdminProps) {
 
   // 统计
   const [stats, setStats] = useState<MemoryStats | null>(null)
+
+  // CRUD 状态
+  const [showCreate, setShowCreate] = useState(false)
+  const [createAgentId, setCreateAgentId] = useState<number>(0)
+  const [createType, setCreateType] = useState('short')
+  const [createContent, setCreateContent] = useState('')
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editContent, setEditContent] = useState('')
+  const [actionMsg, setActionMsg] = useState('')
 
   const loadMemories = useCallback(async () => {
     setLoading(true)
@@ -64,6 +73,38 @@ export function MemoryAdmin({ agents }: MemoryAdminProps) {
   useEffect(() => { loadMemories() }, [loadMemories])
   useEffect(() => { loadStats() }, [loadStats])
 
+  const handleCreate = async () => {
+    if (!createContent.trim() || createAgentId <= 0) return
+    try {
+      await createMemory({ agent_id: createAgentId, memory_type: createType, content: createContent })
+      setShowCreate(false)
+      setCreateContent('')
+      setActionMsg('创建成功')
+      loadMemories()
+      loadStats()
+    } catch { setError('创建失败') }
+  }
+
+  const handleUpdate = async (memoryId: number) => {
+    if (!editContent.trim()) return
+    try {
+      await updateMemory(memoryId, { content: editContent })
+      setEditingId(null)
+      setEditContent('')
+      setActionMsg('更新成功')
+      loadMemories()
+    } catch { setError('更新失败') }
+  }
+
+  const handleDelete = async (memoryId: number) => {
+    try {
+      await deleteMemory(memoryId)
+      setActionMsg('删除成功')
+      loadMemories()
+      loadStats()
+    } catch { setError('删除失败') }
+  }
+
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
   const formatDate = (s: string) => {
@@ -80,7 +121,36 @@ export function MemoryAdmin({ agents }: MemoryAdminProps) {
     <div className="memory-admin">
       <div className="ma-header">
         <h2>记忆面板</h2>
+        <button className="ma-create-btn" onClick={() => setShowCreate(!showCreate)}>
+          {showCreate ? '取消' : '+ 新建记忆'}
+        </button>
       </div>
+
+      {/* 新建表单 */}
+      {showCreate && (
+        <div className="ma-create-form">
+          <select value={createAgentId} onChange={e => setCreateAgentId(Number(e.target.value))}>
+            <option value={0}>选择 Agent...</option>
+            {agents.map(a => (
+              <option key={a.id} value={a.id}>{a.name}</option>
+            ))}
+          </select>
+          <select value={createType} onChange={e => setCreateType(e.target.value)}>
+            <option value="short">短期</option>
+            <option value="long">长期</option>
+            <option value="public">公共</option>
+          </select>
+          <textarea
+            placeholder="记忆内容..."
+            value={createContent}
+            onChange={e => setCreateContent(e.target.value)}
+            rows={3}
+          />
+          <button onClick={handleCreate} disabled={!createContent.trim() || createAgentId <= 0}>
+            创建
+          </button>
+        </div>
+      )}
 
       {/* 筛选 */}
       <div className="ma-filters">
@@ -115,23 +185,26 @@ export function MemoryAdmin({ agents }: MemoryAdminProps) {
       {stats && (
         <div className="ma-stats">
           <div className="ma-stat-item">
-            <span className="ma-stat-value">{stats.short_count}</span>
+            <span className="ma-stat-value">{stats.by_type['short'] ?? 0}</span>
             <span className="ma-stat-label">短期</span>
           </div>
           <div className="ma-stat-item">
-            <span className="ma-stat-value">{stats.long_count}</span>
+            <span className="ma-stat-value">{stats.by_type['long'] ?? 0}</span>
             <span className="ma-stat-label">长期</span>
           </div>
           <div className="ma-stat-item">
-            <span className="ma-stat-value">{stats.public_count}</span>
+            <span className="ma-stat-value">{stats.by_type['public'] ?? 0}</span>
             <span className="ma-stat-label">公共</span>
           </div>
           <div className="ma-stat-item">
-            <span className="ma-stat-value">{stats.total_access_count}</span>
-            <span className="ma-stat-label">总访问</span>
+            <span className="ma-stat-value">{stats.total}</span>
+            <span className="ma-stat-label">总计</span>
           </div>
         </div>
       )}
+
+      {/* 操作提示 */}
+      {actionMsg && <div className="cp-message success" onClick={() => setActionMsg('')}>{actionMsg}</div>}
 
       {/* 错误 */}
       {error && <div className="form-error">{error}</div>}
@@ -150,8 +223,20 @@ export function MemoryAdmin({ agents }: MemoryAdminProps) {
                 <span className="ma-memory-id">#{m.id}</span>
                 <span className="ma-memory-time">{formatDate(m.created_at)}</span>
                 <span className="ma-memory-access">访问 {m.access_count} 次</span>
+                <button className="ma-edit-btn" onClick={() => { setEditingId(m.id); setEditContent(m.content) }}>编辑</button>
+                <button className="ma-delete-btn" onClick={() => handleDelete(m.id)}>删除</button>
               </div>
-              <div className="ma-memory-content">{m.content}</div>
+              {editingId === m.id ? (
+                <div className="ma-edit-form">
+                  <textarea value={editContent} onChange={e => setEditContent(e.target.value)} rows={3} />
+                  <div className="ma-edit-actions">
+                    <button onClick={() => handleUpdate(m.id)}>保存</button>
+                    <button onClick={() => setEditingId(null)}>取消</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="ma-memory-content">{m.content}</div>
+              )}
               {m.expires_at && (
                 <div className="ma-memory-expires">过期: {formatDate(m.expires_at)}</div>
               )}

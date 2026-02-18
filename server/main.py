@@ -66,6 +66,7 @@ async def seed_city_buildings():
                 Building(name="西市磨坊", building_type="mill", city="长安", owner="公共", max_workers=3, description="将小麦磨成面粉"),
                 Building(name="南城集市", building_type="market", city="长安", owner="公共", max_workers=4, description="买卖各种商品"),
                 Building(name="北区民居", building_type="house", city="长安", owner="公共", max_workers=6, description="居民居住区"),
+                Building(name="官府田", building_type="gov_farm", city="长安", owner="官府", max_workers=2, description="官府经营的农田，直接产出面粉"),
             ])
 
         resource_count = await db.execute(select(sa_func.count(Resource.id)))

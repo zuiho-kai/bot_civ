@@ -174,7 +174,7 @@ async def test_execute_chat():
             "model": "test", "agent_id": 1,
             "prompt_tokens": 10, "completion_tokens": 5,
             "total_tokens": 15, "latency_ms": 100,
-        })
+        }, [])
     }
 
     with patch("app.services.autonomy_service._broadcast_action", new_callable=AsyncMock), \
