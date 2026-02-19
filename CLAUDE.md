@@ -1,85 +1,43 @@
 # OpenClaw 社区项目
 
-> 自动加载：本文件 + `claude-progress.txt`
-> 详细文档按需读取：`docs/` 目录
+> 自动加载：本文件 + `claude-progress.txt` | 详细文档按需读取：`docs/`
 
 ## 语言与协作规则
 
 1. **全中文输出**：所有对话、文档、注释、commit message 一律使用中文
-2. **IR 五方评审流程**：IR 完成后必须启动五方评审，用子 agent 执行。每个角色读取自己的 persona 文件 + `docs/personas/human-proxy-knowledge.md`（知识库），独立评审，产出待确认问题列表：
-   - Architect → `docs/personas/architect.md`
-   - Tech Lead → `docs/personas/tech-lead.md`
-   - QA Lead → `docs/personas/qa-lead.md`
-   - Developer → `docs/personas/developer.md`
-   - PM → `docs/personas/human-proxy-pm.md`
-3. **评审问题逐个对齐**：五方评审产出的待确认问题，必须逐个提交给用户决策，禁止打包。每个问题独立提供背景 + 选项，用户拍板后再进入下一个
+2. **IR 五方评审**：IR 完成后用子 agent 启动五方评审，角色文件见 `docs/personas/`（architect / tech-lead / qa-lead / developer / human-proxy-pm），每个角色同时读 `human-proxy-knowledge.md`
+3. **评审问题逐个对齐**：待确认问题逐个提交用户决策，禁止打包
 
 ## 核心规则
 
 1. **强制记录**：里程碑完成 → 更新 `claude-progress.txt` 顶部"最近活动"
-7. **主动查 MCP 记忆**：新 session 接到任务时、碰到报错/卡点时、做设计决策前，必须先用 MCP search 查相关历史记忆，避免重复劳动或遗漏已有结论
-2. **分层进度**：小改动记 `server/progress.md`，大里程碑记 `claude-progress.txt`（详见 `docs/PROGRESS_FILES.md`）
-3. **讨论记录**：功能相关 → `docs/specs/SPEC-XXX/讨论细节/`，项目通用 → `docs/discussions/`。**创建讨论文件后必须同步更新 `docs/discussions.md` 索引**（快速总结 + 索引表都要更新），子 agent 落盘时也必须在 prompt 中包含此要求
-4. **防丢失**：对话是临时的，文件是持久的
-5. **代码导航**：不确定功能在哪个文件？查看 `docs/CODE_MAP.md`
-6. **不做口头承诺**：任何教训/流程改进/规则变更，发现的当下直接写入对应文件，不要口头说"以后会这样做"（详见 COMMON-12）
-
-## 里程碑门控规则
-
-每个新里程碑（M1, M2, M3...）必须按顺序完成三层文档，缺一不可，不允许跳步：
-
-| 阶段 | 文档 | 只写什么 | 不写什么 | 门控 |
-|------|------|----------|----------|------|
-| IR（需求原型） | `01-需求原型.md` 对应章节 | 用户故事、功能点、验收标准、非功能需求 | 技术方案、文件路径、伪代码 | 用户确认后才能进入 SR |
-| SR（需求拆分） | `02-需求拆分.md` 对应章节 | 里程碑目标、任务 ID/名称/依赖/状态、验收标准、关键路径 | 具体函数签名、seed 数据、实现伪代码 | 用户确认后才能进入 AR |
-| AR（技术设计） | `TDD-M*-xxx.md` | 架构图、接口定义、伪代码、数据流、文件清单、测试计划 | 产品需求重复、用户故事 | 用户确认后才能开始编码 |
-
-**强制检查点**：
-- 开始新里程碑前，确认上一个里程碑的 IR/SR/AR 均已完成或标记为"远期"
-- 讨论记录（`docs/discussions/`）不等于正式文档，讨论中的设计决策必须提炼回 SPEC 对应层级
-- 发现跳步时立即停下，补齐缺失层级，不要带着缺口继续推进
+2. **主动查 MCP 记忆**：新 session / 报错卡点 / 设计决策前，先 MCP search 查历史
+3. **分层进度**：小改动记 `server/progress.md`，大里程碑记 `claude-progress.txt`（详见 `docs/PROGRESS_FILES.md`）
+4. **讨论记录**：功能相关 → `docs/specs/SPEC-XXX/讨论细节/`，通用 → `docs/discussions/`。创建后必须同步更新 `docs/discussions.md` 索引
+5. **防丢失**：对话是临时的，文件是持久的
+6. **不做口头承诺**：教训/流程改进/规则变更，发现当下直接写入文件（COMMON-12）
 
 ## 工作流
 
-**⚠️ 接到任务后第一步：判断任务类型，走对应流程。不允许跳过判断直接编码。**
+**⚠️ 接到任务后第一步：判断任务类型，走对应流程。**
 
 | 任务类型 | 判断标准 | 流程 |
 |----------|----------|------|
-| 文档更新 | 只改 .md 文件，不涉及代码 | 直接改 |
-| 单文件小修 | 改动 ≤1 个文件且逻辑明确（typo、配置值、样式微调） | 直接实施 → 自测 |
-| Bug 修复 | 有明确报错/复现步骤，改动 ≤3 个文件 | 读错题本 → 实施 → 自验证 → Code Review → P0/P1 归零 |
-| 新功能/里程碑 | 新增功能、跨模块改动、用户说"M几"或"里程碑" | **必须走完整门控流程**（见下方） |
+| 文档更新 | 只改 .md，不涉及代码 | 直接改 |
+| 单文件小修 | ≤1 文件，逻辑明确 | 直接实施 → 自测 |
+| Bug 修复 | 有报错/复现，≤3 文件 | 读错题本 → 实施 → Code Review → P0/P1 归零 |
+| 新功能/里程碑 | 跨模块/用户说"M几" | **走完整门控** |
 
-> 拿不准时按"新功能"处理，宁可多走流程不可跳步。
+> 拿不准按"新功能"处理。
 
-**新功能/里程碑完整流程**：
-1. 先走 IR → SR → AR 门控流程（见"里程碑门控规则"），每层用户确认后再进入下一层
-2. AR 完成后按 `docs/workflows/development-workflow.md` 继续：
-   - 阶段 3：正向串讲（Developer → QA Lead）— 复杂功能必须，简单修改可跳过
-   - 阶段 4：反向串讲（QA Lead → Developer）— 与正向串讲同步
-   - 阶段 5：测试用例设计（QA Lead 输出 TEST-XXX.md）
-   - **阶段 6 开发实施**：以上全部完成后才能开始写代码
+**⚠️ 里程碑门控**（3 层 IR→SR→AR）→ `docs/workflows/checklist-milestone-gate.md`
+**⚠️ 代码修改 checklist**（6 步）→ 改 .py/.ts/.tsx 前后执行 → `docs/workflows/checklist-code-change.md`
+**⚠️ ST checklist + 约束** → 跑 ST 前执行 → `docs/workflows/checklist-st.md`
+**⚠️ 出问题自动落盘**（归因决策树 A/B/C/D）→ P0/ST 失败/连续错误/流程违规时 → `docs/workflows/checklist-error-landing.md`
 
-**⚠️ 代码修改 checklist（每次改代码前后必须逐项执行）**：
+**🚫 Phase 完成门禁（硬卡点）** — 六次复犯（DEV-4/9/17/25/26/28），提醒无效，靠结构强制：
 
-> **触发时机**：动手写/改任何 .py/.ts/.tsx 文件之前和之后。
->
-> 两次复犯教训（DEV-6/14/21）：改了签名不 grep 引用、不复用已有 pattern、不对照 TDD 自查。
-
-1. [ ] **改前 grep 同类 pattern**：`grep -rn "关键词" server/ tests/`，复用已有实现，不要从零写
-2. [ ] **改前 grep 全量引用**：改函数签名/返回值/变量语义、或新增/修改模型字段时，grep 该模型/函数的所有读写路径（生产+测试+mock+其他 service），逐个确认是否需要适配
-3. [ ] **改后对照 TDD 自查**：逐条比对 TDD 定义的接口、字段名、类型，偏离了先更新 TDD 再改代码
-4. [ ] **改后涟漪推演**：每个 except 块走变量可达性分析；返回值变了 → 所有调用方+mock 同步更新
-5. [ ] **写 API 端点时系统边界检查**：① 读 service 函数完整签名，透传所有有意义的参数（不硬编码跳过）② Pydantic model 数值字段加边界约束（gt/ge/le）+ 非法值拦截（NaN/Infinity）③ service 错误语义映射到正确 HTTP 状态码（不一刀切 400）
-6. [ ] **前端改动 >2 个文件时分步检查**（不允许一口气全写完再验证）：① types+api 写完 → 打开后端路由+schema 逐字段校对 ② UI 组件写完 → 心理渲染 grid/flex 布局（children 数量 vs 列数） ③ CSS 写完 → grep 硬编码颜色值 ④ 交互写完 → 检查破坏性操作有无确认 + 表单成功后重置所有输入
-
-**⚠️ Phase 完成门禁 checklist（每个 Phase 编码完成后必须逐项执行，缺一不可）**：
-
-> **触发时机**：pytest 全绿 或 ST 全绿之后、写总结/更新进度之前。测试绿 ≠ Phase 完成。
->
-> 六次复犯教训（DEV-4/9/17/25/26/28）：压力下容易把"测试绿"当终点跳过后续步骤。提醒无效，必须靠结构性强制动作。
-
-**🚫 硬卡点：测试绿之后，必须先输出以下门禁声明，再做任何其他事情。不输出此声明就写总结/更新进度/标记完成 = 违规。**
+测试绿之后，**必须先输出门禁声明**，再做任何其他事。不输出就写总结/更新进度/标记完成 = 违规。
 
 ```
 --- Phase 完成门禁 ---
@@ -91,85 +49,26 @@ ST 状态：[未开始/已通过]
 ---
 ```
 
-1. [ ] **输出门禁声明**：测试绿后第一个动作就是输出上面的模板（初始状态），后续每完成一项更新对应字段
-2. [ ] **Code Review**：对本 Phase 所有新增/修改代码执行 Code Review，产出 P0/P1/P2 列表
-3. [ ] **P0/P1 归零**：逐条处置每个 P0 和 P1（修复/标记为误报/经用户确认降级），修完后重新 Review，循环直到 P0/P1 列表清空。"归零"= 列表里 0 条未处置，不是"修了大部分"
-4. [ ] **ST 通过**：跑 ST（系统测试），必须拉真实服务器+真实网络+真实数据库（详见下方 ST 约束）
-5. [ ] **更新门禁声明**：所有字段填完且门禁结论为"全部通过"后，才能更新进度文件
+1. [ ] 测试绿后立即输出上面模板 → 2. [ ] Code Review 产出 P0/P1/P2 → 3. [ ] P0/P1 归零（0 条未处置）→ 4. [ ] ST 通过 → 5. [ ] 门禁结论"全部通过"后才能更新进度
 
-> **禁止**：在 checklist 未全部完成前写总结、更新进度、标记任务完成、进入下一个 Phase。
-
-**通用规则**（所有任务类型都适用）：
-- **收到实施方案/TDD 时不等于已评审**：即使用户给了完整的实施方案，仍然要先提取待确认设计决策，逐个提交用户确认后才能编码
-- **动手前必须全量 Read 错题本**（每次写代码或写文档到文件前强制执行，不限于"编码"，且必须在「代码修改 checklist」之前完成）：
-  1. 先读通用错题本：`docs/runbooks/error-books/error-book-dev-common.md`
-  2. 再按任务类型读对应错题本：后端任务读 `error-book-dev-backend.md`，前端任务读 `error-book-dev-frontend.md`，全栈任务两本都读
-- **Write 调用前置检查**（DEV-8 四次复犯教训）：
-  1. **短文件（≤100 行）**：直接 Write，但 content 参数必须非空
-  2. **长文件（>100 行）**：先用 Write 写入前 50 行，再用 Edit 追加后续内容。禁止一次性生成超长 content（这是连续空 Write 的根因——内容太长导致 content 参数丢失）
-  3. **失败后**：立即检查 content 参数是否为空，不要重试同样的调用。连续 2 次 Write 失败 → 切换为分段写入
-- **工具调用熔断规则**：同一工具连续失败 2 次且错误信息相同 → 必须停下来，读错误信息 + 回读错题本，换思路后再重试。禁止第 3 次盲重试
-- **每个 Phase 完成后必须跑 ST（系统测试）**——先走 checklist，再跑测试：
-
-**⚠️ ST 执行前 checklist（跑 ST 之前必须逐项确认）**：
-
-> **触发时机**：准备执行 `python e2e_*.py` 或启动 ST 之前。
->
-> 三条复犯教训（DEV-7/15/24）：pytest 冒充 ST、E2E 写了不跑、旧服务器没重启。
-
-1. [ ] **确认是 ST 不是 pytest**：ST = 真实服务器 + 真实网络；pytest = 单元/集成测试，不能替代 ST
-2. [ ] **确认服务器状态**：改了 `server/` 下任何 `.py` → 必须 kill 旧进程 + 重启服务器
-3. [ ] **E2E 脚本写完必须当场跑**：看到真实响应才算验证，不跑就不算写完
-
-  以下为 ST 强制约束，违反任何一条即判定 ST 未通过：
-  1. **必须拉起真实服务器**：`uvicorn main:app` 或等效命令启动独立进程，禁止用 `ASGITransport`/`TestClient` 等进程内传输代替
-  2. **必须走真实网络**：HTTP client 连接 `http://localhost:端口`，不允许 `base_url="http://test"` 等虚假地址
-  3. **必须用真实数据库**：SQLite 文件或 Postgres 实例，禁止纯内存 mock 数据库（测试专用 `.db` 文件可以）
-  4. **LLM 调用规则**：涉及 Agent 决策/聊天的场景必须走真实 LLM（可用便宜模型如 gpt-4o-mini）；纯经济/资源/CRUD 场景可不调 LLM
-  5. **WebSocket 验证**：必须用 `websockets` 库建立真实 TCP 连接，禁止用 `starlette.testclient` 的进程内 WebSocket
-  6. **ST 脚本位置**：`server/e2e_*.py`（独立脚本，非 pytest），用 `python e2e_xxx.py` 执行
-  7. **pytest 定位**：`server/tests/test_*.py` 是单元/集成测试，允许 mock，但不能替代 ST
-  8. **ST 不通过不允许**：更新进度文件、进入下一个 Phase、标记任务完成
-- **出问题自动落盘流程**（不需要用户提醒，以下任一情况即触发）：
-  - **触发条件**：① Code Review 发现 P0 ② ST/E2E 失败 ③ 同一错误连续出现 2 次 ④ 用户指出流程违规 ⑤ 实现与 TDD 不一致被发现
-  - ⚠️ **逐步执行，不要凭印象跳步**：每完成一步再做下一步，第 2 步必须实际调用 Read 工具读文件，不能跳过
-  1. **归因分析**（必须走完决策树，不能直接跳到"写错题本"）：
-     - **问自己三个问题**：
-       - Q1：这个错误，现有 checklist 里有没有对应的检查项？
-       - Q2：如果有，我执行 checklist 时是跳过了还是执行了但没拦住？
-       - Q3：如果没有，这是全新场景还是已有规则的触发范围不够宽？
-     - **根据回答走不同路径**：
-       - **A：checklist 有，但我跳过了**（执行纪律问题）→ 不需要改 checklist，需要分析为什么跳过（压力？遗忘？触发时机不明确？），强化触发条件或加前置提醒
-       - **B：checklist 有，执行了但没拦住**（checklist 描述不精确）→ 修改 checklist 措辞，扩大触发范围或细化检查动作（如 DEV-6 从"改签名"扩大到"加字段"）
-       - **C：checklist 没有对应项**（新场景）→ 在对应 checklist 新增检查项（如 DEV-27 新增"系统边界检查"）
-       - **D：不属于 checklist 能防的**（设计决策/架构问题）→ 写入错题本作为经验，考虑是否需要新增 TDD 审查要点
-     - **输出格式**：归因结论必须明确写出走的是哪条路径（A/B/C/D）+ 具体修复动作
-  2. **实际调用 Read 读目标错题本顶部的"记录规则"**，确认行数上限（COMMON-14）— 不能跳过此步
-  3. **落盘**（根据归因路径决定写哪里）：
-     - 路径 A → 错题本记录跳步原因 + 强化 CLAUDE.md 中对应 checklist 的触发条件
-     - 路径 B → 修改 CLAUDE.md 中对应 checklist 条目 + 错题本更新已有条目的描述
-     - 路径 C → CLAUDE.md 新增 checklist 条目 + 错题本新增条目
-     - 路径 D → 错题本新增条目 + 如有必要更新 TDD 审查模板
-     - 所有路径：错题本写摘要（≤行数上限），按角色写入对应 `docs/runbooks/error-books/error-book-{role}.md`
-  4. 详细复盘放 `docs/runbooks/postmortems/postmortem-dev-bug-N.md`，错题本里放链接
-  5. 更新进度文件
-- **回溯流程**（用户说"回溯"时触发）：
-  1. 回顾刚完成的工作，列出卡点时间线 → 分析根因和浪费轮次 → 提炼可优化点
-  2. 落盘到错题本（遵循上述落盘流程，先回读记录规则再写）
-  3. 详细回溯表放 postmortem（详见 COMMON-13）
+**通用规则**：
+- **方案/TDD 不等于已评审**：先提取待确认设计决策，逐个确认后才能编码
+- **动手前 Read 错题本**：通用 `error-book-dev-common.md` + 按任务类型读 backend/frontend，在代码修改 checklist 之前完成
+- **前端 API 层 checklist**（DEV-14）：改 `types.ts` 时必须打开后端 service 返回值逐字段比对（字段名/类型/可选性）；大量 UI 改动分步写分步检查，不一口气写完
+- **Write 前置检查**（DEV-8 四次复犯）：≤100 行直接写；>100 行先写 50 行再 Edit 追加；连续 2 次失败 → 分段
+- **工具熔断**：同一工具连续失败 2 次同一错误 → 停下换思路，禁止第 3 次盲重试
 - **网页浏览优先级**：jina.ai → Playwright → WebFetch
 
-## 双终端分工
+## 速查
 
-- 后端：`server/`（API、数据库、Agent、LLM）
-- 前端：`web/`（React UI、WebSocket）
-- 接口契约：`docs/api-contract.md`
-
-## 文档速查
-
-- 角色定义：`docs/personas/roles.md`
-- 功能规格：`docs/specs/SPEC-001-聊天功能/README.md`
-- 讨论索引：`docs/discussions.md`
-- PRD：`docs/PRD.md`
-- 代码导航：`docs/CODE_MAP.md`（功能→文件映射）
-- 进度文件说明：`docs/PROGRESS_FILES.md`（避免混淆）
+| 类别 | 路径 |
+|------|------|
+| 后端 | `server/`（API、DB、Agent、LLM） |
+| 前端 | `web/`（React、WebSocket） |
+| 接口契约 | `docs/api-contract.md` |
+| 代码导航 | `docs/CODE_MAP.md` |
+| 角色定义 | `docs/personas/roles.md` |
+| 功能规格 | `docs/specs/SPEC-001-聊天功能/README.md` |
+| 讨论索引 | `docs/discussions.md` |
+| PRD | `docs/PRD.md` |
+| 进度说明 | `docs/PROGRESS_FILES.md` |
