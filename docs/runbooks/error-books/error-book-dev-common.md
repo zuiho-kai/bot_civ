@@ -119,7 +119,7 @@
 ✅ SR 阶段门禁是硬性卡点；编码前回 SR 确认"当前阶段、前置 T 是否通过"；ST 对照 SR 验收标准逐条确认
 > 根因：把 SR 当"参考"而非"合同"。判断标准：编码前能否在 SR 指出"我在第几阶段、前置 T 已通过"。
 
-
+### DEV-33 pytest 冒充 ST（DEV-7 复犯）+ P0/P1 归零跳过归因
 
 ❌ 任务入口判断"直接实施"→ 跳过 ST checklist → 复用 pytest 模式写 test_m5_e2e.py → 声称"ST 通过"；修完 P1-1 直接宣布"P0/P1 归零"，没有归因（这个 bug 怎么引入的？checklist 需要更新吗？）
 ✅ ST 脚本必须放 server/e2e_*.py + 真实服务器（现已由 server_utils.managed_server() 自动管理）；P0/P1 归零 = 修复 + 归因（路径 A/B/C/D）+ 判断是否更新 checklist，三步缺一不可
