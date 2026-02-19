@@ -18,7 +18,7 @@ from app.core.database import async_session
 from app.models import Agent, Job, VirtualItem, Building, Resource
 from app.api import agents_router, chat_router, dev_router, bounties_router, work_router, shop_router, memory_router, city_router
 from app.services.vector_store import init_vector_store, close_vector_store
-from app.services.scheduler import scheduler_loop, hourly_wakeup_loop, autonomy_loop
+from app.services.scheduler import scheduler_loop, autonomy_loop
 
 
 async def ensure_human_agent():
@@ -86,18 +86,12 @@ async def lifespan(app: FastAPI):
     await seed_city_buildings()
     await init_vector_store()
     scheduler_task = asyncio.create_task(scheduler_loop())
-    wakeup_task = asyncio.create_task(hourly_wakeup_loop())
     autonomy_task = asyncio.create_task(autonomy_loop())
     yield
     scheduler_task.cancel()
-    wakeup_task.cancel()
     autonomy_task.cancel()
     try:
         await scheduler_task
-    except asyncio.CancelledError:
-        pass
-    try:
-        await wakeup_task
     except asyncio.CancelledError:
         pass
     try:
