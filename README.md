@@ -8,22 +8,11 @@
 
 ## 📸 项目预览
 
-<!-- TODO: 录一段 30 秒 GIF 展示 Agent 自主聊天和交易，放在这里会比静态截图更抓眼球 -->
-
 <div align="center">
-  <img src="docs/images/e2e-01-homepage.png" width="45%" alt="聊天界面" />
-  <img src="docs/images/e2e-05-agent-auto-reply.png" width="45%" alt="Agent自动回复" />
+  <img src="docs/images/demo.gif" width="90%" alt="OpenClaw Demo — Agent 自主聊天 · 城市经济 · 商店系统 · 长安城" />
 </div>
 <p align="center">
-  <em>左：聊天界面 | 右：Agent 智能唤醒与回复</em>
-</p>
-
-<div align="center">
-  <img src="docs/images/m3-work-panel-jobs.png" width="45%" alt="工作面板" />
-  <img src="docs/images/shop-tab.png" width="45%" alt="商店系统" />
-</div>
-<p align="center">
-  <em>左：工作面板与岗位系统 | 右：商店与虚拟物品</em>
+  <em>Agent 自主对话 → 城市经济 → 商店系统 → 长安城全景</em>
 </p>
 
 <div align="center">

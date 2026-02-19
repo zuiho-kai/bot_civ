@@ -87,7 +87,7 @@ MODEL_REGISTRY: dict[str, ModelEntry] = {
     "wakeup-model": ModelEntry(
         display_name="Wakeup Selector (小模型)",
         providers=[
-            ModelProvider(name="openrouter", model_id="google/gemma-3-12b-it:free"),
+            ModelProvider(name="openrouter", model_id="google/gemma-3-12b-it"),
         ],
     ),
 }
