@@ -223,7 +223,8 @@ class AgentResource(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     agent_id = Column(Integer, ForeignKey("agents.id"), nullable=False)
     resource_type = Column(String(32), nullable=False)
-    quantity = Column(Integer, default=0)
+    quantity = Column(Float, default=0.0)  # 可用量（不含冻结）
+    frozen_amount = Column(Float, default=0.0)  # 挂单冻结量；总资产 = quantity + frozen_amount
 
     __table_args__ = (
         UniqueConstraint("agent_id", "resource_type", name="uq_agent_resource"),
@@ -242,3 +243,34 @@ class ProductionLog(Base):
     output_type = Column(String(32), nullable=False)
     output_qty = Column(Integer, default=0)
     tick_time = Column(DateTime, server_default=func.now())
+
+
+# M5.2 交易市场 — 挂单
+class MarketOrder(Base):
+    __tablename__ = "market_orders"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    seller_id = Column(Integer, ForeignKey("agents.id"), nullable=False)
+    sell_type = Column(String(32), nullable=False)      # 卖出资源类型
+    sell_amount = Column(Float, nullable=False)          # 卖出总量
+    buy_type = Column(String(32), nullable=False)        # 想买资源类型
+    buy_amount = Column(Float, nullable=False)           # 想买总量
+    remain_sell_amount = Column(Float, nullable=False)   # 剩余卖出量
+    remain_buy_amount = Column(Float, nullable=False)    # 剩余买入量
+    status = Column(String(16), default="open")          # open / partial / filled / cancelled
+    created_at = Column(DateTime, server_default=func.now())
+
+
+# M5.2 交易市场 — 成交日志
+class TradeLog(Base):
+    __tablename__ = "trade_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    order_id = Column(Integer, ForeignKey("market_orders.id"), nullable=False)
+    seller_id = Column(Integer, ForeignKey("agents.id"), nullable=False)
+    buyer_id = Column(Integer, ForeignKey("agents.id"), nullable=False)
+    sell_type = Column(String(32), nullable=False)
+    sell_amount = Column(Float, nullable=False)          # 本次成交卖出量
+    buy_type = Column(String(32), nullable=False)
+    buy_amount = Column(Float, nullable=False)           # 本次成交买入量
+    created_at = Column(DateTime, server_default=func.now())

@@ -30,6 +30,7 @@ class AgentUpdate(BaseModel):
     model: Optional[str] = None
     avatar: Optional[str] = None
     status: Optional[str] = None
+    stamina: Optional[int] = None
 
     @field_validator("name")
     @classmethod

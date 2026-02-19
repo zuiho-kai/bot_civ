@@ -85,4 +85,88 @@ TRANSFER_RESOURCE_TOOL = ToolDefinition(
 tool_registry = ToolRegistry()
 tool_registry.register(TRANSFER_RESOURCE_TOOL)
 
+
+# --- M5.2 交易市场工具 ---
+
+async def _handle_create_market_order(arguments: dict, context: dict) -> dict:
+    """create_market_order handler。seller_id 从 context 取。"""
+    from .market_service import create_order
+    db = context["db"]
+    seller_id = context["agent_id"]
+    return await create_order(
+        seller_id=seller_id,
+        sell_type=arguments["sell_type"], sell_amount=arguments["sell_amount"],
+        buy_type=arguments["buy_type"], buy_amount=arguments["buy_amount"],
+        db=db,
+    )
+
+
+async def _handle_accept_market_order(arguments: dict, context: dict) -> dict:
+    """accept_market_order handler。buyer_id 从 context 取。"""
+    from .market_service import accept_order
+    db = context["db"]
+    buyer_id = context["agent_id"]
+    return await accept_order(
+        buyer_id=buyer_id,
+        order_id=arguments["order_id"],
+        buy_ratio=arguments.get("buy_ratio", 1.0),
+        db=db,
+    )
+
+
+async def _handle_cancel_market_order(arguments: dict, context: dict) -> dict:
+    """cancel_market_order handler。seller_id 从 context 取。"""
+    from .market_service import cancel_order
+    db = context["db"]
+    seller_id = context["agent_id"]
+    return await cancel_order(seller_id=seller_id, order_id=arguments["order_id"], db=db)
+
+
+CREATE_MARKET_ORDER_TOOL = ToolDefinition(
+    name="create_market_order",
+    description="在交易市场挂单：卖出一种资源，换取另一种资源",
+    parameters={
+        "type": "object",
+        "properties": {
+            "sell_type": {"type": "string", "description": "卖出资源类型，如 wheat"},
+            "sell_amount": {"type": "number", "description": "卖出数量"},
+            "buy_type": {"type": "string", "description": "想买资源类型，如 flour"},
+            "buy_amount": {"type": "number", "description": "想买数量"},
+        },
+        "required": ["sell_type", "sell_amount", "buy_type", "buy_amount"],
+    },
+    handler=_handle_create_market_order,
+)
+
+ACCEPT_MARKET_ORDER_TOOL = ToolDefinition(
+    name="accept_market_order",
+    description="接受交易市场上的挂单（可部分接单）",
+    parameters={
+        "type": "object",
+        "properties": {
+            "order_id": {"type": "integer", "description": "挂单 ID"},
+            "buy_ratio": {"type": "number", "description": "接单比例 0~1，默认 1.0（全额）"},
+        },
+        "required": ["order_id"],
+    },
+    handler=_handle_accept_market_order,
+)
+
+CANCEL_MARKET_ORDER_TOOL = ToolDefinition(
+    name="cancel_market_order",
+    description="撤销自己在交易市场上的挂单",
+    parameters={
+        "type": "object",
+        "properties": {
+            "order_id": {"type": "integer", "description": "挂单 ID"},
+        },
+        "required": ["order_id"],
+    },
+    handler=_handle_cancel_market_order,
+)
+
+tool_registry.register(CREATE_MARKET_ORDER_TOOL)
+tool_registry.register(ACCEPT_MARKET_ORDER_TOOL)
+tool_registry.register(CANCEL_MARKET_ORDER_TOOL)
+
 # TODO: 假设所有模型支持 function calling，后续按需补降级逻辑

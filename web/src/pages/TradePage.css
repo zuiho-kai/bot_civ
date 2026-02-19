@@ -117,6 +117,10 @@
   gap: 12px;
 }
 
+.tp-full-row {
+  grid-column: 1 / -1;
+}
+
 .tp-submit-btn {
   padding: 8px 20px;
   border: none;
@@ -144,11 +148,11 @@
 }
 
 .tp-message.success {
-  color: #23a559;
+  color: var(--color-success);
 }
 
 .tp-message.error {
-  color: #ed4245;
+  color: var(--color-danger);
 }
 
 /* 转赠历史 */
@@ -178,4 +182,140 @@
   font-size: 0.8rem;
   color: var(--text-muted);
   padding: 8px 12px;
+}
+
+/* 交易市场 */
+.tp-market-title {
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.tp-orders {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.tp-order-actions-bar {
+  display: flex;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  align-items: flex-end;
+}
+
+.tp-order-actions-bar label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tp-order-actions-bar select,
+.tp-order-actions-bar input {
+  padding: 6px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  min-height: 36px;
+}
+
+.tp-order-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.tp-order-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.tp-order-seller {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-heading);
+  min-width: 50px;
+}
+
+.tp-order-detail {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tp-order-status {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.tp-status-open {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.tp-status-partial {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.tp-order-btns {
+  display: flex;
+  gap: 6px;
+  margin-left: 10px;
+}
+
+.tp-btn-accept,
+.tp-btn-cancel {
+  padding: 5px 12px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 32px;
+  transition: background 0.15s;
+}
+
+.tp-btn-accept {
+  background: var(--accent-primary);
+  color: #fff;
+}
+
+.tp-btn-accept:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.tp-btn-accept:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.tp-btn-cancel {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.tp-btn-cancel:hover {
+  background: var(--color-danger-bg);
+  filter: brightness(0.9);
 }

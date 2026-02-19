@@ -32,7 +32,7 @@
 
 **⚠️ 里程碑门控**（3 层 IR→SR→AR）→ `docs/workflows/checklist-milestone-gate.md`
 **⚠️ 代码修改 checklist**（6 步）→ 改 .py/.ts/.tsx 前后执行 → `docs/workflows/checklist-code-change.md`
-**⚠️ ST checklist + 约束** → 跑 ST 前执行 → `docs/workflows/checklist-st.md`
+**⚠️ ST checklist + 约束** → 跑 ST 前执行 → `docs/workflows/checklist-st.md`（含 DEV-30 环境重置）
 **⚠️ 出问题自动落盘**（归因决策树 A/B/C/D）→ P0/ST 失败/连续错误/流程违规时 → `docs/workflows/checklist-error-landing.md`
 
 **🚫 Phase 完成门禁（硬卡点）** — 六次复犯（DEV-4/9/17/25/26/28），提醒无效，靠结构强制：

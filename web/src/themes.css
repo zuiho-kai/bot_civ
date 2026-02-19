@@ -88,9 +88,13 @@
   --credits-text: #946800;
   --credits-bg: rgba(180, 130, 20, 0.12);
 
-  /* Functional: success / card */
+  /* Functional: success / warning / danger / card */
   --color-success: #23a559;
   --color-success-bg: rgba(35, 165, 89, 0.15);
+  --color-warning: #f0b232;
+  --color-warning-bg: rgba(240, 178, 50, 0.15);
+  --color-danger: #ed4245;
+  --color-danger-bg: rgba(237, 66, 69, 0.15);
   --card-bg: #eaeae4;
 
   /* Shadow */

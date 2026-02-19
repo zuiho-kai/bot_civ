@@ -53,6 +53,17 @@
 | 每日发放 | `scheduler.py:daily_credit_grant()` | 每日 00:00 发放信用点 |
 | 发言扣费集成 | `wakeup_service.py:process_wakeup()` | 唤醒前检查+回复后扣费 |
 
+### 🏪 交易市场
+
+| 功能 | 文件 | 说明 |
+|------|------|------|
+| 市场服务 | `server/app/services/market_service.py` | 挂单/接单/撤单核心逻辑 |
+| 市场 API | `server/app/api/city.py` (交易市场段) | REST 路由：GET/POST /market/* |
+| 数据模型 | `server/app/models/tables.py` | MarketOrder + TradeLog 表 |
+| 前端 API | `web/src/api.ts` (Market API 段) | fetchMarketOrders/create/accept/cancel/tradeLogs |
+| 前端类型 | `web/src/types.ts` | MarketOrder + TradeLog 接口 |
+| 前端 UI | `web/src/pages/TradePage.tsx` | 挂单列表 + 挂单表单 + 接单/撤单 |
+
 ### 🎁 悬赏系统
 
 | 功能 | 文件 | 说明 |
@@ -105,6 +116,7 @@
 | 悬赏系统测试 | `server/tests/test_bounties.py` | 悬赏流程测试 |
 | 唤醒频率测试 | `server/tests/test_wakeup_frequency.py` | 频率控制测试 |
 | 聊天经济测试 | `server/tests/test_chat_economy.py` | 发言扣费集成测试 |
+| 交易市场测试 | `server/tests/test_m5_2_market.py` | 挂单/接单/撤单/并发 22 用例 |
 
 ---
 
@@ -115,6 +127,7 @@
 | 功能 | 文件 | 说明 |
 |------|------|------|
 | 主页 | `web/src/pages/Home.tsx` | 聊天界面 |
+| 交易面板 | `web/src/pages/TradePage.tsx` | 资源转赠 + 交易市场（挂单/接单/撤单） |
 | Agent 管理 | `web/src/components/AgentList.tsx` | Agent 列表侧栏 |
 | 信息面板 | `web/src/components/InfoPanel.tsx` | Agent 详情、系统信息 |
 

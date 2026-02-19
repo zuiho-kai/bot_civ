@@ -210,3 +210,30 @@ export interface TransferResult {
   ok: boolean
   reason: string
 }
+
+// 交易市场
+export interface MarketOrder {
+  id: number
+  seller_id: number
+  seller_name?: string
+  sell_type: string
+  sell_amount: number
+  remain_sell_amount: number
+  buy_type: string
+  buy_amount: number
+  remain_buy_amount: number
+  status: 'open' | 'partial' | 'filled' | 'cancelled'
+  created_at: string
+}
+
+export interface TradeLog {
+  id: number
+  order_id: number
+  seller_id: number
+  buyer_id: number
+  sell_type: string
+  sell_amount: number
+  buy_type: string
+  buy_amount: number
+  created_at: string
+}

@@ -5,12 +5,20 @@
 
 ## 当前状态
 
-- **阶段**: M5.1 完成（资源转赠 + Tool Use，ST 8/8 全绿）
+- **阶段**: M5.2 完成（交易市场 — 挂单/接单/撤单，ST 16/16 全绿）
 - **技术栈**: FastAPI + WebSocket | React + Vite | SQLite + NumPy + 硅基流动 Embedding API
 - **仓库**: https://github.com/zuiho-kai/bot_civ
-- **测试**: UT 全绿 + M5.1 ST 8/8 全绿
+- **测试**: UT 211/211 全绿 + M5.2 ST 16/16 全绿
 
 ## 最近活动
+
+### 2026-02-20
+- M5.2 交易市场完成：ST 16/16 全绿 + pytest 211/211 全绿
+  - 后端：`market_service.py`（挂单/接单/撤单）、`city.py`（5 个 REST 路由）、`tool_registry.py`（3 个交易工具）
+  - 前端：`TradePage.tsx`（交易市场 UI）、`types.ts`/`api.ts`（类型+API）
+  - Code Review 2 轮（后端+前端），P0/P1 归零
+  - 修复：`await db.commit()` 补全、`_map_error_status` 覆盖"只能"、AgentUpdate 加 stamina
+  - 错题本：DEV-27 二次复犯（错误映射不全）、DEV-30 新增（ST 环境假设脆弱）
 
 ### 2026-02-19
 - M5.1 资源转赠 + Tool Use 完成：ST 8/8 全绿

@@ -91,14 +91,20 @@
 
 ### DEV-27 写 API 层只关注"能调通"，忽略系统边界防御
 
-❌ Pydantic model 当透传容器不加边界约束（NaN/Infinity 穿透）；service 错误一刀切 400；不看 service 完整签名硬编码调用（漏 status_filter/offset）
-✅ 写 API 端点时：① 读 service 完整签名透传所有参数 ② 数值字段加 gt/ge/le + 非法值拦截 ③ 错误语义映射正确 HTTP 状态码
-> 已在 CLAUDE.md「代码修改 checklist」增设第 5 步「系统边界检查」。
+❌ Pydantic model 当透传容器不加边界约束（NaN/Infinity 穿透）；service 错误一刀切 400；不看 service 完整签名硬编码调用（漏 status_filter/offset）；`_map_error_status` 只写了"不能/已/不足"三个关键词，漏了"只能" → 返回 400 而非 409（二次复犯）
+✅ 写 API 端点时：① 读 service 完整签名透传所有参数 ② 数值字段加 gt/ge/le + 非法值拦截 ③ 错误语义映射正确 HTTP 状态码 ④ **错误映射写完后 grep service 层所有 raise/return error 消息，逐条验证映射覆盖**
+> 已在 CLAUDE.md「代码修改 checklist」增设第 5 步「系统边界检查」。二次复犯：映射关键词不全。
 
 ### DEV-29 P0/P1 修复列表漏项 + 执行节奏碎片化
 
 ❌ Code Review 列了 5 个 P1，只修了 4 个漏掉 P1-5；独立修改逐个做每个停一次；ST 脚本碎片追加 Edit 7-8 次卡在匹配不唯一；独立文件更新串行 6 次来回
 ✅ P0/P1 列表逐条核销不漏项；多个独立修改一条消息并行发出；新建长文件 Write 主体+最多 1-2 次 Edit 补尾；独立文件更新并行
 > 路径 A：门禁 checklist 有"P0/P1 归零"但执行时漏了一条。已在 CLAUDE.md 通用规则新增「并行执行原则」。
+
+### DEV-30 ST 脚本环境假设脆弱 → 重启循环浪费
+
+❌ ST ensure 函数假设资源/体力充足，固定生产 5 轮不检查结果；每发现一个环境问题就改代码→杀进程→清数据→重启→跑 ST，5 轮重启占 60% 调试时间
+✅ ① ST 脚本开头加全局环境重置（清 market 数据 + 恢复体力 + 确保资源充足）② ensure 函数循环生产直到满足 need，不用固定轮数 ③ 改了 service 逻辑先跑 pytest 验证，最后才重启服务器跑 ST——减少重启次数 ④ Windows 杀进程封装 helper（netstat→findstr→taskkill 三步合一）
+> 路径 C：ST 脚本设计缺陷。判断标准：ST 有 ensure/setup 函数 → 必须循环+检查，不能固定轮数假设够用。
 
 

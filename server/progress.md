@@ -7,14 +7,41 @@
 
 ## 当前状态
 
-- **当前任务**: M5.1 完成，可进入 M5.2 或 M6
-- **最近完成**: M5.1 资源转赠 + Tool Use（ST 8/8 全绿）
-- **待办优先级**: M5.2 交易市场 或 M6 Agent CLI 运行时
+- **当前任务**: M5.2 完成 — 交易市场 ST 16/16 全绿 + pytest 211/211 全绿
+- **最近完成**: M5.2-6 ST 端到端验证通过
+- **待办优先级**: M6 Agent CLI 运行时
 - **阻塞问题**: 无
 
 ---
 
 ## 进展日志
+
+### 2026-02-20
+
+#### M5.2 交易市场 — Phase 1 + 2 + 2.5 完成
+
+**改动内容**：
+
+1. **tables.py**: AgentResource.frozen_amount + MarketOrder + TradeLog 表
+2. **market_service.py** (新建): create_order / accept_order / cancel_order / list_orders / get_trade_logs
+3. **city.py**: 5 个 REST 路由 (GET/POST /market/orders, accept, cancel, trade-logs) + Pydantic 校验
+4. **tool_registry.py**: 3 个交易市场工具注册 (create_market_order / accept_market_order / cancel_market_order)
+5. **前端**: types.ts (MarketOrder/TradeLog) + api.ts (5 个 market 函数) + TradePage.tsx (挂单/接单/撤单 UI) + TradePage.css
+
+**Code Review 修复**（2 轮 review，P0/P1 归零）：
+- P0-1: MarketOrder.seller_name 改为可选（后端不返回此字段）
+- P1-1: 卖家 label 独占一行（grid 布局修正）
+- P1-2: 接单成功后 setAcceptRatio(1.0) 重置
+- P1-3: 撤单加 confirm() 确认
+- P1-4: CSS 硬编码颜色替换为 CSS 变量 + themes.css 新增 warning/danger
+
+**验证**: 后端 211/211 全绿 + 前端 TS 零错误 + Vite 构建通过 + 13/13 前端测试全绿
+
+**ST 脚本**: e2e_m5_2.py (8 个场景: 挂单/不足/全量接单/部分接单/撤单/非本人撤单/WS广播/成交日志)
+
+**状态**: ✅ 完成（ST 16/16 全绿 + pytest 211/211 全绿）
+
+---
 
 ### 2026-02-19
 

@@ -1,4 +1,4 @@
-import type { Agent, Message, Bounty, Job, CheckInResult, ShopItem, PurchaseResult, AgentItem, Memory, MemoryListResponse, MemoryStats, CityOverview, Building, ProductionLog, WorkerResult, EatResult, TransferResult } from './types'
+import type { Agent, Message, Bounty, Job, CheckInResult, ShopItem, PurchaseResult, AgentItem, Memory, MemoryListResponse, MemoryStats, CityOverview, Building, ProductionLog, WorkerResult, EatResult, TransferResult, MarketOrder, TradeLog } from './types'
 import { MOCK_AGENTS, MOCK_MESSAGES, MOCK_BOUNTIES } from './mock-data'
 
 const BASE = '/api'
@@ -358,5 +358,78 @@ export async function transferResource(
     }),
   })
   if (!res.ok) throw new Error(`transferResource: ${res.status}`)
+  return res.json()
+}
+
+// --- Market API ---
+
+export async function fetchMarketOrders(status?: string[]): Promise<MarketOrder[]> {
+  if (await useMock()) return []
+  const q = new URLSearchParams()
+  if (status) status.forEach(s => q.append('status', s))
+  const res = await fetch(`${BASE}/market/orders?${q}`)
+  if (!res.ok) throw new Error(`fetchMarketOrders: ${res.status}`)
+  return res.json()
+}
+
+export async function createMarketOrder(data: {
+  seller_id: number
+  sell_type: string
+  sell_amount: number
+  buy_type: string
+  buy_amount: number
+}): Promise<{ ok: boolean; reason: string; order_id?: number }> {
+  if (await useMock()) return { ok: false, reason: 'mock_mode' }
+  const res = await fetch(`${BASE}/market/orders`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ detail: res.statusText }))
+    return { ok: false, reason: body.detail ?? res.statusText }
+  }
+  return res.json()
+}
+
+export async function acceptMarketOrder(
+  orderId: number,
+  buyerId: number,
+  buyRatio = 1.0,
+): Promise<{ ok: boolean; reason: string }> {
+  if (await useMock()) return { ok: false, reason: 'mock_mode' }
+  const res = await fetch(`${BASE}/market/orders/${orderId}/accept`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ buyer_id: buyerId, buy_ratio: buyRatio }),
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ detail: res.statusText }))
+    return { ok: false, reason: body.detail ?? res.statusText }
+  }
+  return res.json()
+}
+
+export async function cancelMarketOrder(
+  orderId: number,
+  sellerId: number,
+): Promise<{ ok: boolean; reason: string }> {
+  if (await useMock()) return { ok: false, reason: 'mock_mode' }
+  const res = await fetch(`${BASE}/market/orders/${orderId}/cancel`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ seller_id: sellerId }),
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ detail: res.statusText }))
+    return { ok: false, reason: body.detail ?? res.statusText }
+  }
+  return res.json()
+}
+
+export async function fetchTradeLogs(limit = 20, offset = 0): Promise<TradeLog[]> {
+  if (await useMock()) return []
+  const res = await fetch(`${BASE}/market/trade-logs?limit=${limit}&offset=${offset}`)
+  if (!res.ok) throw new Error(`fetchTradeLogs: ${res.status}`)
   return res.json()
 }

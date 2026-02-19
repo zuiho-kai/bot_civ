@@ -26,7 +26,7 @@ async def _get_or_create_agent_resource(agent_id: int, resource_type: str, db: A
     )
     ar = result.scalar()
     if not ar:
-        ar = AgentResource(agent_id=agent_id, resource_type=resource_type, quantity=0)
+        ar = AgentResource(agent_id=agent_id, resource_type=resource_type, quantity=0.0, frozen_amount=0.0)
         db.add(ar)
         await db.flush()
     return ar
@@ -43,14 +43,15 @@ async def get_agent_resources(agent_id: int, db: AsyncSession) -> list[dict]:
     ]
 
 
-async def transfer_resource(from_agent_id: int, to_agent_id: int, resource_type: str, quantity: int, db: AsyncSession) -> dict:
+async def transfer_resource(from_agent_id: int, to_agent_id: int, resource_type: str, quantity: float, db: AsyncSession) -> dict:
     """在两个 agent 之间转移资源"""
     if quantity <= 0:
         return {"ok": False, "reason": "数量必须大于 0"}
 
     from_res = await _get_or_create_agent_resource(from_agent_id, resource_type, db)
-    if from_res.quantity < quantity:
-        return {"ok": False, "reason": f"{resource_type} 不足，当前 {from_res.quantity}，需要 {quantity}"}
+    available = from_res.quantity - from_res.frozen_amount
+    if available < quantity:
+        return {"ok": False, "reason": f"{resource_type} 可用不足，当前可用 {available}，需要 {quantity}"}
 
     to_res = await _get_or_create_agent_resource(to_agent_id, resource_type, db)
     from_res.quantity -= quantity
