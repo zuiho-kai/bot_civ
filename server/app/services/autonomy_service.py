@@ -269,7 +269,7 @@ async def decide(snapshot: str) -> list[dict]:
         return []
 
 
-async def execute_decisions(decisions: list[dict], db: AsyncSession) -> dict:
+async def execute_decisions(decisions: list[dict], db: AsyncSession, snapshot: str = "") -> dict:
     """逐条执行决策，返回统计。"""
     from ..api.chat import broadcast, send_agent_message
 
@@ -342,6 +342,7 @@ async def execute_decisions(decisions: list[dict], db: AsyncSession) -> dict:
                             "agent_name": agent_name,
                             "persona": agent.persona,
                             "model": agent.model,
+                            "reason": reason,
                         })
                 else:
                     logger.info("Autonomy chat quota denied for %s", agent_name)
@@ -460,7 +461,7 @@ async def execute_decisions(decisions: list[dict], db: AsyncSession) -> dict:
 
     # 聊天统一走 batch_generate
     if chat_tasks:
-        await _execute_chats(chat_tasks, db, stats, round_log)
+        await _execute_chats(chat_tasks, db, stats, round_log, snapshot)
 
     # 更新上一轮日志
     global _last_round_log
@@ -475,6 +476,7 @@ async def _execute_chats(
     db: AsyncSession,
     stats: dict,
     round_log: list[dict],
+    snapshot: str = "",
 ):
     """批量生成聊天并发送。"""
     from ..api.chat import send_agent_message, broadcast
@@ -491,14 +493,38 @@ async def _execute_chats(
         for m in reversed(msg_result.scalars().all())
     ]
 
-    agents_info = [
-        {**task, "history": history}
-        for task in chat_tasks
-    ]
+    # 构建游戏上下文（去掉聊天和指令部分，避免与 history 重复）
+    game_context = ""
+    if snapshot:
+        lines = []
+        skip = False
+        for line in snapshot.splitlines():
+            if line.startswith("== 最近聊天 =="):
+                skip = True
+                continue
+            if skip and line.startswith("== "):
+                skip = False
+            if skip or line.startswith("请为每个居民"):
+                continue
+            lines.append(line)
+        game_context = "\n".join(lines).strip()
+
+    agents_info = []
+    for task in chat_tasks:
+        h = list(history)
+        # 注入游戏上下文 + 当轮行为 reason
+        ctx_parts = []
+        if game_context:
+            ctx_parts.append(f"当前游戏状态：\n{game_context}")
+        if task.get("reason"):
+            ctx_parts.append(f"你刚刚的行为：{task['reason']}")
+        if ctx_parts:
+            h.append({"name": "系统", "content": "\n".join(ctx_parts)})
+        agents_info.append({**task, "history": h})
 
     results = await runner_manager.batch_generate(agents_info)
 
-    # 并行错开发送（与 hourly_wakeup_loop 风格一致）
+    # 并行错开发送
     async def _delayed_chat_send(task, reply, usage_info, delay):
         await asyncio.sleep(delay)
         try:
@@ -578,7 +604,7 @@ async def tick():
 
         logger.info("Autonomy tick: executing %d decisions", len(decisions))
         async with async_session() as db:
-            stats = await execute_decisions(decisions, db)
+            stats = await execute_decisions(decisions, db, snapshot)
 
         logger.info("Autonomy tick: done — %s", stats)
 

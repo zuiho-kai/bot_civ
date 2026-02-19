@@ -361,3 +361,92 @@ async def test_performance_baseline():
 
     assert t_full < 60000, f"完整 tick 耗时 {t_full:.1f}ms，超过 60s 阈值"
     print(f"\n  [PERF] snapshot={t_snapshot:.1f}ms, exec={t_exec:.1f}ms, full_tick={t_full:.1f}ms")
+
+
+# ---------- 11. chat reason 注入到 history ----------
+
+async def test_execute_chat_injects_reason_into_history():
+    """chat 决策时，reason 被注入到 batch_generate 的 history 末尾。"""
+    from app.services.autonomy_service import execute_decisions
+
+    decisions = [{"agent_id": 1, "action": "chat", "params": {}, "reason": "刚打完卡想聊聊"}]
+
+    captured_agents_info = []
+
+    async def _capture_batch(agents_info):
+        captured_agents_info.extend(agents_info)
+        return {1: ("你好！", None, [])}
+
+    with patch("app.services.autonomy_service._broadcast_action", new_callable=AsyncMock), \
+         patch("app.services.autonomy_service.runner_manager") as mock_runner, \
+         patch("app.services.autonomy_service.economy_service") as mock_econ:
+        mock_runner.batch_generate = AsyncMock(side_effect=_capture_batch)
+        mock_econ.check_quota = AsyncMock(return_value=MagicMock(allowed=True))
+        mock_econ.deduct_quota = AsyncMock()
+
+        async with async_session() as db:
+            await execute_decisions(decisions, db)
+
+    assert len(captured_agents_info) == 1
+    history = captured_agents_info[0]["history"]
+    # 最后一条应该是系统注入的 reason
+    last = history[-1]
+    assert last["name"] == "系统"
+    assert "刚打完卡想聊聊" in last["content"]
+
+
+@pytest.mark.asyncio
+async def test_execute_chat_injects_game_context():
+    """chat 决策时，snapshot 游戏上下文被注入到 history（不含聊天部分）。"""
+    from app.services.autonomy_service import execute_decisions
+
+    decisions = [{"agent_id": 1, "action": "chat", "params": {}, "reason": "炒了小麦粉被压价"}]
+    snapshot = """当前时间：2026-01-01 08:00 UTC
+
+== 居民状态 ==
+- ID=1 小明: 程序员 | 余额=50 | 资源=[flour=10]
+
+== 最近聊天 ==
+- 小明: 早上好
+
+== 上一轮行为 ==
+- 小明: create_market_order — 挂单卖小麦粉
+
+== 交易市场 ==
+- 挂单#1: 卖家ID=1 卖flourx5 换coinx10 (open)
+
+请为每个居民决定下一步行为。"""
+
+    captured_agents_info = []
+
+    async def _capture_batch(agents_info):
+        captured_agents_info.extend(agents_info)
+        return {1: ("唉被压价了", None, [])}
+
+    with patch("app.services.autonomy_service._broadcast_action", new_callable=AsyncMock), \
+         patch("app.services.autonomy_service.runner_manager") as mock_runner, \
+         patch("app.services.autonomy_service.economy_service") as mock_econ:
+        mock_runner.batch_generate = AsyncMock(side_effect=_capture_batch)
+        mock_econ.check_quota = AsyncMock(return_value=MagicMock(allowed=True))
+        mock_econ.deduct_quota = AsyncMock()
+
+        async with async_session() as db:
+            await execute_decisions(decisions, db, snapshot)
+
+    assert len(captured_agents_info) == 1
+    history = captured_agents_info[0]["history"]
+    last = history[-1]
+    assert last["name"] == "系统"
+    # 应包含游戏状态
+    assert "居民状态" in last["content"]
+    assert "flour=10" in last["content"]
+    assert "交易市场" in last["content"]
+    # 应包含上一轮行为
+    assert "上一轮行为" in last["content"]
+    assert "挂单卖小麦粉" in last["content"]
+    # 应包含 reason
+    assert "炒了小麦粉被压价" in last["content"]
+    # 不应包含聊天部分（避免与 history 重复）
+    assert "最近聊天" not in last["content"]
+    # 不应包含指令
+    assert "请为每个居民" not in last["content"]

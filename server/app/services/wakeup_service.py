@@ -1,10 +1,10 @@
 """
 唤醒决策引擎
 
-三种触发方式：
+两种触发方式：
 1. @提及 → 必定唤醒
-2. 人类消息 → 小模型选人
-3. 定时触发 → 小模型判断是否主动发言
+2. 人类/Agent 消息 → 小模型选人
+（定时聊天已合并到 autonomy_service）
 """
 import logging
 import httpx
@@ -28,17 +28,6 @@ WAKEUP_PROMPT = """你是一个聊天室管理员。根据以下信息，选择�
 
 请返回最合适回复的 Agent 名称，如果没有人需要回复则返回 "NONE"。
 只返回名称，不要解释。"""
-
-SCHEDULED_WAKEUP_PROMPT = """你是一个聊天室管理员。现在是定时检查时间，根据最近的聊天内容，选出应该主动发言的 Agent。
-
-可选 Agent：
-{agent_list}
-
-最近消息：
-{recent_messages}
-
-请返回应该主动发言的 Agent 名称，用逗号分隔。如果没有人需要发言则返回 "NONE"。
-只返回名称，不要解释。例如：Alice,Bob"""
 
 
 async def call_wakeup_model(prompt: str) -> str:
@@ -188,38 +177,6 @@ class WakeupService:
         result = await call_wakeup_model(prompt)
         return self._resolve_name(result, candidates)
 
-    async def scheduled_trigger(
-        self, online_agent_ids: set[int], db: AsyncSession
-    ) -> list[int]:
-        """定时触发：选出所有应该主动发言的 Agent，返回 agent_id 列表"""
-        # 前置条件：至少有 1 个非 Agent 活跃连接（即人类在线）
-        if 0 not in online_agent_ids:
-            return []
-
-        candidates = await self._get_candidates(online_agent_ids, exclude_id=0, db=db)
-        if not candidates:
-            return []
-
-        recent = await self._get_recent_messages(db, limit=10)
-        if not recent:
-            return []
-
-        agent_list = "\n".join(
-            f"- {a.name}: {a.persona[:80]}" for a in candidates
-        )
-        recent_text = "\n".join(
-            f"{m.agent.name if m.agent else 'unknown'}: {m.content[:100]}"
-            for m in recent
-        )
-
-        prompt = SCHEDULED_WAKEUP_PROMPT.format(
-            agent_list=agent_list,
-            recent_messages=recent_text,
-        )
-
-        result = await call_wakeup_model(prompt)
-        return self._resolve_names(result, candidates)
-
     async def _get_candidates(
         self, online_agent_ids: set[int], exclude_id: int, db: AsyncSession
     ) -> list[Agent]:
@@ -262,15 +219,3 @@ class WakeupService:
             if agent.name in name or name in agent.name:
                 return agent.id
         return None
-
-    def _resolve_names(self, text: str, candidates: list[Agent]) -> list[int]:
-        """将模型返回的逗号分隔名称解析为 agent_id 列表"""
-        if not text or text.upper().strip() == "NONE":
-            return []
-        names = [n.strip().strip('"').strip("'") for n in text.split(",")]
-        result = []
-        for name in names:
-            aid = self._resolve_name(name, candidates)
-            if aid is not None and aid not in result:
-                result.append(aid)
-        return result
