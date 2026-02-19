@@ -101,6 +101,12 @@
 ✅ P0/P1 列表逐条核销不漏项；多个独立修改一条消息并行发出；新建长文件 Write 主体+最多 1-2 次 Edit 补尾；独立文件更新并行
 > 路径 A：门禁 checklist 有"P0/P1 归零"但执行时漏了一条。已在 CLAUDE.md 通用规则新增「并行执行原则」。
 
+### DEV-31 网页搜索走 curl 而非浏览器 → SPA 页面拿不到内容白费轮次
+
+❌ 查 OpenRouter 限流文档时用 curl 抓 SPA 页面，拿到的全是空壳 HTML（JS 渲染内容为空），反复换 URL 浪费 4 轮
+✅ CLAUDE.md 已有规则「网页浏览优先级：jina.ai → Playwright → WebFetch」。SPA/动态页面必须走 Playwright，curl 只适合静态页面或 API
+> 根因：没遵守已有流程规则。判断标准：目标是文档网站 → 大概率 SPA → 直接 Playwright。
+
 ### DEV-30 ST 脚本环境假设脆弱 → 重启循环浪费
 
 ❌ ST ensure 函数假设资源/体力充足，固定生产 5 轮不检查结果；每发现一个环境问题就改代码→杀进程→清数据→重启→跑 ST，5 轮重启占 60% 调试时间
