@@ -24,9 +24,9 @@
 
 ### DEV-4 跳过流程门控直接编码（评审/串讲/用户确认）
 
-❌ 跳过需求评审直接写代码；AR 完成后跳过串讲+测试用例设计；拿到完整方案不提取待确认点直接派 agent 开干
-✅ 完整门控链：IR → SR → AR → 正向串讲 → 反向串讲 → 测试用例设计 → 编码。方案越完整隐含假设越多，越需要逐项提交用户确认
-> 三次复犯（DEV-4/DEV-9/DEV-17）。详见 `development-workflow.md` 完整流程。
+❌ 跳过需求评审直接写代码；AR 完成后跳过串讲+测试用例设计；拿到完整方案不提取待确认点直接派 agent 开干；测试绿了直接写总结跳过 Code Review
+✅ 完整门控链：IR → SR → AR → 正向串讲 → 反向串讲 → 测试用例设计 → 编码 → Code Review → P0/P1 归零 → 更新进度。方案越完整隐含假设越多，越需要逐项提交用户确认
+> 六次复犯（DEV-4/9/17/25/26/28）。已在 CLAUDE.md 增设独立「Phase 完成门禁 checklist」防跳步，但仍因"测试绿→完成感"跳过。路径 A：执行纪律问题。
 
 ### DEV-5 实施不遵循 TDD 文档
 
@@ -34,22 +34,23 @@
 ✅ 严格按 TDD 实施，需要改设计先更新 TDD 再改代码
 > TDD 是契约，改契约需要走流程。
 
-### DEV-6 改代码不 grep 全量引用 → 下游断裂（含签名/返回值变更）
+### DEV-6 改代码不 grep 引用 + 不复用 pattern + 不对照 TDD（含 DEV-14/21）
 
-❌ 改了变量语义或函数返回值，没 grep 全量引用（生产+测试），导致死代码、unpack 报错、mock 失效
-✅ 改签名/语义前 `grep -rn "函数名" server/ tests/ web/`，逐个确认引用是否成立；改完做"涟漪推演"
-> 案例：DEV-BUG-6（变量语义）、DEV-21（返回值 2→3 元素，10 处 mock 未同步）。详见 [postmortem-dev-bug-6.md](../postmortems/postmortem-dev-bug-6.md)
+❌ 改了签名/返回值不 grep 全量引用 → 下游断裂；不 grep 同类实现从零写 → Code Review 出 P1；写完不对照 TDD → 字段名偏离
+✅ 改前 grep 同类 pattern 复用 → 改前 grep 全量引用确认 → 改后逐条对照 TDD → 改后涟漪推演（变量可达性+mock 同步）
+> 已在 CLAUDE.md 增设独立「代码修改 checklist」。详见 [postmortem-dev-bug-6.md](../postmortems/postmortem-dev-bug-6.md)、[postmortem-dev-bug-11.md](../postmortems/postmortem-dev-bug-11.md)
 
-### DEV-7 把 pytest 单元测试当成 ST（系统测试）验证
+### DEV-7 测试验证偷懒：pytest 冒充 ST / E2E 不跑 / 旧服务器没重启（含 DEV-15/24）
 
-❌ 被要求"启动 ST 测试"时，直接跑 `pytest tests/`，声称"全绿=验证通过"
-✅ UT=pytest mock；ST=启动 uvicorn + curl 真实 API；E2E=前后端联调 + Playwright
-> 单元测试全绿只能证明 mock 环境下逻辑正确，不能证明真实环境可用。
+❌ pytest 全绿就声称"ST 通过"；E2E 脚本写了不当场跑就 commit；代码改了但旧服务器还在跑，测试结果不可信
+✅ ST = 真实服务器+真实网络，不是 pytest；E2E 写完必须当场跑看到真实响应；改了 server/*.py → kill 旧进程+重启
+> 已在 CLAUDE.md 增设独立「ST 执行前 checklist」。详见 [postmortem-dev-bug-12.md](../postmortems/postmortem-dev-bug-12.md)
 
-### DEV-8 Write 工具调用缺少 content 参数反复失败（⚠️ 二次复犯）
+### DEV-8 Write 工具调用缺少 content 参数反复失败（⚠️ 四次复犯）
 
-❌ 长文档生成时连续发空 Write 调用（无 content），二次复犯
-✅ Write 调用前先确认 content 已就绪，没就绪就不发；失败后读错误信息修正，连续 2 次同一错误 → 换思路
+❌ 长文件生成时连续发空 Write 调用（无 content），四次复犯。根因：一次性生成超长 content 导致参数丢失，且违反熔断规则连续重试
+✅ 短文件直接 Write；长文件（>100 行）先 Write 前 50 行再 Edit 追加；连续 2 次失败 → 切换分段写入
+> 路径 B：checklist 有但"输出前 3 行"检查动作不够强。已改为按文件长度分策略 + 失败后强制切换。
 
 ### DEV-10 E2E 测试 fixture 只 create_all 不先 drop_all → UNIQUE 冲突
 
@@ -76,31 +77,22 @@
 ✅ 429 有 retryDelay = RPM 限制（等）；无 = 真用尽
 > 两次复犯（DEV-12、DEV-20）。详见 [postmortem-dev-bug-10.md](../postmortems/postmortem-dev-bug-10.md)、[postmortem-dev-bug-16.md](../postmortems/postmortem-dev-bug-16.md)
 
-### DEV-14 新功能编码不复用已有 pattern → Code Review 出 P1/P2
-
-❌ 不 grep 同类实现、擅自偏离 TDD、try/except 变量可达性未检查、写完不逐条对照 TDD 自查
-✅ 编码前 grep 同类 pattern → 写完逐条对照 TDD → 每个 except 走变量可达性分析
-> 详见 [postmortem-dev-bug-11.md](../postmortems/postmortem-dev-bug-11.md)
-
-### DEV-15 写了 E2E 脚本不当场跑 → 假绿交差
-
-❌ 写了 E2E 脚本没启动服务器跑就 commit，mock 测试标记为"E2E passed"
-✅ E2E 脚本写完必须当场启动服务器跑，看到真实 LLM 响应才算验证；mock 测试标记为"集成测试"
-> 详见 [postmortem-dev-bug-12.md](../postmortems/postmortem-dev-bug-12.md)
-
 ### DEV-16 调研任务串行搜索 → 浪费时间，违反 CLAUDE.md 并行规则
 
 ❌ 调研"无人值守开发模式"时，把 4 个独立子主题（质量保障、并行开发、调度机制、架构对比）塞进 1 个 subagent 串行搜索
 ✅ 搜索关键词超过 2 组时，拆成多个并行 Task agent 分头搜索，最后汇总
 > CLAUDE.md 第 72 行明确规定"调研/搜索任务必须并行"。根因：把调研看成"一个问题"没做任务分解。判断标准：搜索关键词 ≥ 2 组 → 拆并行 agent。
 
-### DEV-24 跑 ST 前不确认服务器状态 + E2E 超时过长
-
-❌ 代码有变更但直接跑 ST（旧服务器还在跑）→ 测试结果不可信；ST-5 deadline=90s 但实际 LLM 只需 ~11s → 每次失败白等 90s
-✅ 跑 ST 前先确认：① 代码有变更 → kill 旧进程 + 重启服务器 ② E2E 超时设为实际耗时的 2-3 倍（30s），不要 10 倍保守值
-> 根因：对"服务器需要重启"缺乏条件反射。判断标准：改了 server/ 下任何 .py → 必须重启。
+### DEV-24 更新文档只改局部不扫全文
 
 ❌ 用户说"更新 README"，只改了截图和架构图，没扫描全文 → 特性列表、计划中、测试数字、项目结构、文档链接全部过时
 ✅ 更新任何文档前先全文扫描，列出所有过时点，一次性全部更新。"更新"= 全面审查一致性，不是只改最明显的一处
 > 根因：窄化理解用户意图。判断标准：用户说"更新 X 文件" → 先通读全文对比当前系统状态，再动手。
+
+### DEV-27 写 API 层只关注"能调通"，忽略系统边界防御
+
+❌ Pydantic model 当透传容器不加边界约束（NaN/Infinity 穿透）；service 错误一刀切 400；不看 service 完整签名硬编码调用（漏 status_filter/offset）
+✅ 写 API 端点时：① 读 service 完整签名透传所有参数 ② 数值字段加 gt/ge/le + 非法值拦截 ③ 错误语义映射正确 HTTP 状态码
+> 已在 CLAUDE.md「代码修改 checklist」增设第 5 步「系统边界检查」。
+
 

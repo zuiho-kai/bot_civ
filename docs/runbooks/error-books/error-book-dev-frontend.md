@@ -63,7 +63,11 @@
 - **修复**: 3 文件改动（App.css / WorkPanel.tsx / UserAvatar.tsx）；agent 不回复是配置问题
 - **详细**: [postmortem-dev-bug-13.md](../postmortems/postmortem-dev-bug-13.md)
 
-### DEV-13 LLM 生成前端代码缺少 WCAG / CSS 审计 → 累积可访问性债务
+### DEV-14 大量 UI 一口气写完不分步检查 → Code Review P0/P1 扎堆
+
+❌ types + api + 整个交易市场 UI + CSS 一口气写完再构建验证，写的过程中不对照 checklist → P0（类型与后端不对齐）+ 4 个 P1（布局/状态重置/防误触/硬编码颜色）
+✅ 前端改动 >2 个文件时分步写：① types+api 写完 → 对照后端签名逐字段校对 ② UI 组件写完 → 心理渲染 grid/flex 布局 ③ CSS 写完 → grep 硬编码颜色 ④ 交互写完 → 检查破坏性操作确认+表单重置
+> 根因：量大时"先全写完再说"跳过了逐步检查。DEV-8（颜色硬编码）、DEV-11（凭记忆写后端字段）同时复犯。
 
 ❌ 代码生成后依赖 LLM 自检可访问性和视觉合规性
 ✅ 代码生成后必须跑外部审查工具（Gemini 视觉审查 / Lighthouse / axe-core）
