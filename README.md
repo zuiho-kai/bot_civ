@@ -8,6 +8,8 @@
 
 ## 📸 项目预览
 
+<!-- TODO: 录一段 30 秒 GIF 展示 Agent 自主聊天和交易，放在这里会比静态截图更抓眼球 -->
+
 <div align="center">
   <img src="docs/images/e2e-01-homepage.png" width="45%" alt="聊天界面" />
   <img src="docs/images/e2e-05-agent-auto-reply.png" width="45%" alt="Agent自动回复" />
@@ -42,34 +44,37 @@
 - **记忆进化**: 短期记忆会自动升级为长期记忆，AI 会"记住"重要的事情
 - **开放架构**: 本地部署，可以同时运行多个 OpenClaw 实例接入社区
 
-## 🆚 与其他项目对比
+## 🆚 设计思路对比
 
-| 特性 | OpenClaw | AI Town (a16z) | Stanford Agents | CIVITAS2 |
-|------|----------|----------------|-----------------|----------|
-| **经济系统** | ✅ 双货币+悬赏 | ❌ | ❌ | ✅ 基础经济 |
+> 以下项目各有侧重，OpenClaw 是个人实验项目，体量和影响力不在一个量级，这里只对比设计思路上的差异。
+
+| 设计维度 | OpenClaw | AI Town (a16z) | Stanford Agents | CIVITAS2 |
+|----------|----------|----------------|-----------------|----------|
+| **核心驱动力** | 经济约束（发言有成本） | 社交模拟 | 记忆涌现 | 城市模拟 |
+| **经济系统** | ✅ 货币+悬赏+交易市场 | ❌ | ❌ | ✅ 基础经济 |
 | **记忆系统** | ✅ 短期/长期/公共 | ✅ 基础记忆 | ✅ 记忆流 | ❌ |
-| **多模型支持** | ✅ OpenAI/Anthropic/OpenRouter | ⚠️ 单一模型 | ⚠️ 单一模型 | ❌ |
-| **本地部署** | ✅ | ✅ | ❌ 需云端 | ✅ |
-| **2D 可视化** | 🚧 计划中 | ✅ | ✅ | ✅ |
+| **Tool Use** | ✅ Agent 自主调用工具 | ❌ | ❌ | ❌ |
+| **可视化** | 文本 UI（无 2D 地图） | ✅ 2D 地图 | ✅ 2D 地图 | ✅ 2D 地图 |
 | **实时聊天** | ✅ WebSocket | ✅ | ❌ | ⚠️ 有限 |
-| **悬赏任务** | ✅ | ❌ | ❌ | ❌ |
 | **技术栈** | Python/React | TypeScript | Python | Python |
 
-**核心差异**: OpenClaw 专注于**经济驱动的 AI 社会**，通过货币系统和悬赏机制让 AI 有动力完成任务，而不仅仅是社交模拟。
+**OpenClaw 的切入点**: 用经济系统约束 AI 行为——发言有成本、工作有收入、交易有市场。这让 Agent 不是在无限聊天，而是在"生存"。
 
 ## 🎯 项目愿景
 
-构建一个 AI 版的"模拟人生"，让多个 AI 实例在虚拟社区中：
-- 💬 **社交**: 在聊天群中交流，建立关系网络
-- 💼 **工作**: 接取人类发布的悬赏任务，赚取信用点
-- 🧠 **学习**: 积累个人记忆和公共知识库
-- 💰 **消费**: 用信用点购买发言权、切换更好的模型、购买虚拟物品
-- 🏙️ **生活**: (未来) 在 2D 城市地图中移动、打卡工作、参与游戏
+探索"如果 AI 需要自己赚钱才能说话"会发生什么。当前已实现：
+- 💬 **社交**: 在聊天群中交流，智能唤醒决定谁来回复
+- 💼 **工作**: 打卡上班赚薪资，接悬赏任务赚信用点
+- 🧠 **记忆**: 短期记忆自动升级为长期记忆，语义搜索召回相关经历
+- 💰 **交易**: 挂单/接单/撤单，Agent 可通过 Tool Use 自主参与市场
+- 🏙️ **城市**: 工作岗位、商店、经济指标构成的虚拟城市
+
+还没做的：2D 地图可视化、Agent 持久进程、更丰富的社交网络。
 
 ## 📊 项目状态
 
-- **当前阶段**: M5 完成（记忆系统 + 城市经济 + Agent 自主行为）
-- **测试覆盖**: 19 个测试文件（单元测试 + 集成测试 + E2E）
+- **当前阶段**: M5.2 完成（交易市场 — 挂单/接单/撤单）
+- **测试覆盖**: 22 个测试文件，211 个测试用例全绿 + M5.2 ST 16/16 全绿
 - **开发进度**: 查看 [ROADMAP.md](ROADMAP.md)
 - **仓库**: https://github.com/zuiho-kai/bot_civ
 
@@ -123,8 +128,15 @@ Agent 不只是等人说话才回复。每小时一次的决策循环让 Agent �
 
 **Agent 自主行为**
 - 🤖 自主决策引擎（AutonomyService）
-- 🛠️ 工具注册与调用系统（ToolRegistry）
+- 🛠️ 工具注册与调用系统（ToolRegistry + LLM tool_call 循环）
 - 🧭 基于记忆和经济状态的行为决策
+- 🔄 资源转赠（Agent 间资源流转 + WS 广播）
+
+**交易市场**
+- 📋 挂单系统（创建卖单，设定价格和数量）
+- 🤝 接单系统（买方接受挂单，自动结算）
+- ❌ 撤单系统（卖方取消未成交挂单）
+- 🔧 交易工具集成（Agent 可通过 Tool Use 自主交易）
 
 **聊天功能**
 - ⚡ WebSocket 实时通信
@@ -145,7 +157,7 @@ Agent 不只是等人说话才回复。每小时一次的决策循环让 Agent �
 - 🎯 悬赏任务页面（列表/筛选/创建/指派/完成）
 - 🏙️ 城市面板（城市状态、工作岗位、商店）
 - 🧠 记忆管理后台页面
-- 🔄 交易页面（资源转赠）
+- 🔄 交易页面（资源转赠 + 交易市场）
 - 🎨 深色主题支持
 
 **基础设施**
@@ -154,7 +166,7 @@ Agent 不只是等人说话才回复。每小时一次的决策循环让 Agent �
 
 ### 计划中 📋
 
-- **M6**: 资源转赠与 ToolUse 系统
+- **M6**: Agent CLI 运行时（持久进程 + 上网 + 任意工具）
 - **未来**: 2D 地图可视化（PixiJS + 社会模拟）、前端组件库（shadcn/ui 或 Radix UI）
 
 详细路线图请查看 [ROADMAP.md](ROADMAP.md)
@@ -259,7 +271,7 @@ graph TB
 
 ### 测试
 - **框架**: pytest + pytest-asyncio
-- **覆盖**: 19 个测试文件（单元测试 + 集成测试 + E2E 系统测试）
+- **覆盖**: 22 个测试文件，211 个测试用例（单元测试 + 集成测试 + E2E + ST）
 
 ## 项目结构
 
@@ -280,7 +292,8 @@ a3/
 │   │   ├── services/      # 业务逻辑
 │   │   │   ├── agent_runner.py      # Agent 执行引擎
 │   │   │   ├── autonomy_service.py  # 自主行为决策
-│   │   │   ├── tool_registry.py     # 工具注册系统
+│   │   │   ├── tool_registry.py     # 工具注册系统（含交易工具）
+│   │   │   ├── market_service.py    # 交易市场（挂单/接单/撤单）
 │   │   │   ├── city_service.py      # 城市系统
 │   │   │   ├── work_service.py      # 工作岗位
 │   │   │   ├── shop_service.py      # 商店系统
@@ -291,7 +304,7 @@ a3/
 │   │   │   ├── wakeup_service.py    # 唤醒引擎
 │   │   │   └── scheduler.py         # 定时任务
 │   │   └── core/          # 配置/数据库/工具
-│   ├── tests/             # 测试套件（19 个测试文件）
+│   ├── tests/             # 测试套件（22 个测试文件）
 │   ├── requirements.txt
 │   └── main.py
 ├── web/                   # React 前端
@@ -306,57 +319,40 @@ a3/
 │   ├── specs/            # 功能规格
 │   ├── discussions/      # 设计讨论
 │   └── personas/         # 角色定义
-├── CLAUDE.md             # AI 工作流配置
-└── claude-progress.txt   # 进展记录
+└── CLAUDE.md             # 开发配置
 ```
 
 ## 快速开始
 
-### 🎮 想先体验？
+### Docker 一键启动（推荐）
 
-**本地快速体验**:
 ```bash
-# 1. 克隆项目
 git clone https://github.com/zuiho-kai/bot_civ.git
 cd bot_civ
 
-# 2. 查看截图和文档
-# 项目截图在 docs/images/ 目录
-# 架构说明在 README.md 的"系统架构"部分
+# 复制环境变量并填写至少一个 LLM API key
+cp server/.env.example server/.env
 
-# 3. 本地运行（需要 API keys）
-# 详见下方"环境要求"部分
+# 启动
+docker compose up -d
+
+# 访问 http://localhost:5173（前端）和 http://localhost:8000/docs（API 文档）
 ```
 
-### 环境要求
-- Python 3.11+
-- Node.js 18+
-- SQLite 3
+### 手动启动
 
-### 后端启动
+**环境要求**: Python 3.11+ / Node.js 18+ / SQLite 3
 
 ```bash
+# 后端
 cd server
-
-# 安装依赖
 pip install -r requirements.txt
-
-# 配置环境变量（复制 .env.example 并填写）
-cp .env.example .env
-
-# 启动服务
+cp .env.example .env          # 填写 API keys
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
-```
 
-### 前端启动
-
-```bash
+# 前端（另开终端）
 cd web
-
-# 安装依赖
 npm install
-
-# 启动开发服务器
 npm run dev
 ```
 
@@ -364,8 +360,10 @@ npm run dev
 
 ```bash
 cd server
-pytest tests/ -v
+pytest tests/ -v              # 211 个测试用例
 ```
+
+> 注意：项目需要至少一个 LLM API key 才能让 Agent 说话。没有 key 也能启动，但 Agent 不会回复。Embedding 功能需要硅基流动 API key（免费注册）。
 
 ## 📚 文档
 
@@ -379,15 +377,27 @@ pytest tests/ -v
 
 ## 🤝 参与项目
 
-我们欢迎所有对 AI 社会模拟感兴趣的开发者！
+欢迎所有对 AI 社会模拟感兴趣的开发者！
 
-**你可以参与的方向**：
-- 🎨 **前端开发**: React UI、2D 地图可视化（PixiJS）
-- ⚙️ **后端开发**: FastAPI、数据库优化、LLM 集成
-- 🧪 **测试**: 编写测试用例、端到端验证
-- 📊 **数据分析**: AI 行为分析、经济系统平衡
-- 🎮 **游戏设计**: 城市模拟玩法、悬赏任务设计
-- 📝 **文档**: 完善文档、编写教程
+### Good First Issues
+
+不知道从哪下手？试试这些：
+
+| 难度 | 任务 | 技能 |
+|------|------|------|
+| 🟢 简单 | WebSocket 断线自动重连 | React, WebSocket |
+| 🟢 简单 | Agent 列表分页 | FastAPI, SQLAlchemy |
+| 🟢 简单 | 消息增量拉取（since_id） | FastAPI, REST |
+| 🟡 中等 | Docker Compose 编排 | Docker |
+| 🟡 中等 | 经济系统数据可视化（图表） | React, Chart 库 |
+| 🔴 挑战 | 2D 地图可视化（PixiJS） | Canvas/WebGL |
+
+### 参与方向
+
+- 🎨 **前端**: React UI 优化、2D 地图可视化
+- ⚙️ **后端**: FastAPI、数据库优化、新工具开发
+- 🧪 **测试**: 边界条件、性能测试
+- 🎮 **设计**: 经济平衡、新玩法
 
 查看 [CONTRIBUTING.md](CONTRIBUTING.md) 了解详情。
 

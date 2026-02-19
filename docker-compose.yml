@@ -1,0 +1,24 @@
+services:
+  server:
+    build: ./server
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./server/.env
+    volumes:
+      - ./server/data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  web:
+    build: ./web
+    ports:
+      - "5173:5173"
+    depends_on:
+      server:
+        condition: service_healthy
+    environment:
+      - VITE_API_URL=http://server:8000
