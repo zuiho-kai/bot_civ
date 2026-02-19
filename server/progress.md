@@ -131,44 +131,26 @@
 
 ---
 
-## 待办事项
-
-- [ ] M1 #2 唤醒/意图识别规则引擎（wakeup_service.py）
-- [ ] M1 #3 模拟消息触发器（测试用）
-- [ ] M1 #5 LLM 集成（agent_runner.py）
-- [ ] WebSocket 集成测试（多连接广播、@提及、系统通知）
-
----
-
 ## 技术债务
 
 - [ ] Agent CRUD 缺少分页功能
-- [ ] WebSocket 断线重连 / 心跳机制
-- [ ] GET /api/messages 增加 since_id 增量拉取（Phase 2）
-- [ ] agent_typing 系统事件（Phase 2）
+- [ ] M2-1 向量搜索降级开关（embedding API 不可用时 fallback 到关键词匹配）
 
 ## 遗留问题
 
-- [ ] **M2-1 向量搜索降级开关**: 如果 embedding API 不可用（key 未配置/网络不通），记忆检索应 fallback 到关键词匹配，不走向量搜索。配置缺失时启动报 warning。需要在 `vector_store.py` 和 `config.py` 加开关字段（如 `VECTOR_SEARCH_ENABLED=true`）。
-
----
-
-## 遇到的问题及解决
-
-详见 [错题本](../docs/runbooks/error-books/error-book-dev.md)（#1 lifespan 不触发、#2 端口冲突、#3 Windows curl 编码）
+- [ ] **M2-1 向量搜索降级开关**: embedding API 不可用时 fallback 到关键词匹配，需在 `vector_store.py` 和 `config.py` 加 `VECTOR_SEARCH_ENABLED` 开关
 
 ---
 
 ## 大里程碑记录
 
-### M1.1 - Agent CRUD + WebSocket 基础功能
-- **完成时间**: 2026-02-14
-- **包含内容**: Agent CRUD API（含 PUT/DELETE）+ WebSocket 聊天协议升级 + 消息持久化 + Human Agent 初始化
-- **验证标准**: 11 个冒烟测试通过 ✅ + 前后端联调通过 ✅ + Playwright 黑盒测试通过 ✅
-- **同步状态**: ✅ 联调完成
-
-### M1.2 - 唤醒引擎 + Agent 回复引擎
-- **完成时间**: 2026-02-14
-- **包含内容**: WakeupService（@必唤 + 小模型选人 + 定时触发）+ AgentRunner（LLM 调用 + 增量上下文）+ chat.py 异步唤醒集成
-- **验证标准**: 代码就绪，需配置 OpenRouter API key 后端到端验证
-- **同步状态**: ⏳ 待 LLM 调用验证
+| 里程碑 | 完成时间 | 验证 |
+|--------|----------|------|
+| M1 Agent CRUD + WebSocket + 唤醒引擎 + LLM 集成 | 2026-02-14 | 11 冒烟测试 ✅ + E2E ✅ |
+| M2 记忆与经济系统（Phase 1-6） | 2026-02-16 | 14/14 E2E 全绿 ✅ |
+| M3 城市经济闭环 | 2026-02-17 | E2E ✅ |
+| M4 Agent 自主行为 | 2026-02-18 | 9 E2E + 10 单元测试 ✅ |
+| M5 记忆系统 + 城市经济 | 2026-02-18 | E2E ✅ |
+| M5.1 资源转赠 + Tool Use | 2026-02-19 | ST 8/8 全绿 ✅ |
+| M5.2 交易市场（挂单/接单/撤单） | 2026-02-20 | ST 16/16 全绿 + pytest 211/211 ✅ |
+| M6.1 建造系统 | 2026-02-21 | ST 9/9 全绿 + pytest 211/211 ✅ |
