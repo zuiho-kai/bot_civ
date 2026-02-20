@@ -261,6 +261,14 @@ Gemini 审查 → FAIL → Claude Code 修复 → 重新审查 → 直到 PASS
 3. **普通文本文档用便宜模型** — AR/TDD 等纯文本文档用子 task + haiku/sonnet 写，不占用 opus 上下文
 4. **工具调用失败立即修正** — 读错误信息，修正参数，不盲目重试同一调用
 5. **外部进程/CLI 排查先做环境全景扫描** — 排查子进程超时、连接失败等问题时，先花 5 分钟并行验证：① 代理变量（`env | grep -i proxy`）② 直连测试（`curl --noproxy "*"`）③ 配置文件实际路径（grep hardcoded path）④ 进程读的是哪份配置。多个假设并行验证，不串行等超时（参见 DEV-12）
+6. **执行策略按复杂度选择** — 小任务（≤5 文件、单模块）一条龙直接编码（Opus 或 Sonnet 均可）；大任务（≥6 文件或跨前后端+测试）开 team 分发并行。中间再开子 agent 传上下文的通信开销往往大于直接干活的成本
+7. **评审方式按级别选择** — 里程碑级 IR 评审用 TeamCreate 开 team（复用上下文，支持多轮追问）；SR 级轻量审核用 Task 单次调用即可
+
+## 多终端协作流程
+
+> 详见 [multi-terminal-collaboration.md](./multi-terminal-collaboration.md)（Opus/Sonnet 分工、SR/AR 标准、并发策略、分支策略、Sonnet 踩坑预警）
+
+---
 
 ## 流程适配规则
 
