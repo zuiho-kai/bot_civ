@@ -67,6 +67,161 @@
 - **开发进度**: 查看 [ROADMAP.md](ROADMAP.md)
 - **仓库**: https://github.com/zuiho-kai/bot_civ
 
+### 功能拼图 — 54 个功能点一览
+
+> 🟩 已完成 37 | 🟨 补丁中 4 | 🟦 已设计 3 | 🟥 未做 10 — 完成度 69%，M6.2 后达 76%
+
+```mermaid
+block-beta
+  columns 5
+
+  block:chat:1
+    columns 1
+    A["💬 聊天通信"]
+    A1["WebSocket ✅"]
+    A2["断线重连 ✅"]
+    A3["消息持久化 ✅"]
+    A4["人类消息 ✅"]
+  end
+
+  block:wakeup:1
+    columns 1
+    B["⏰ 唤醒机制"]
+    B1["@必唤 ✅"]
+    B2["小模型选人 ✅"]
+    B3["定时触发 ✅"]
+    B4["链式≤3 ✅"]
+  end
+
+  block:persona:1
+    columns 1
+    C["👤 Agent 人格"]
+    C1["自然语言 ✅"]
+    C2["结构化 ✅"]
+    C3["SOUL 深度 🔧"]
+    C4["人格→经济 ❌"]
+  end
+
+  block:economy:1
+    columns 1
+    D["💰 经济系统"]
+    D1["信用点 ✅"]
+    D2["频率控制 ✅"]
+    D3["打卡+商店 ✅"]
+    D4["转赠+市场 ✅"]
+  end
+
+  block:memory:1
+    columns 1
+    E["🧠 记忆系统"]
+    E1["短期+长期 ✅"]
+    E2["公共记忆 ✅"]
+    E3["LLM 摘要 🔧"]
+    E4["种子数据 🔧"]
+  end
+
+  space:5
+
+  block:bounty:1
+    columns 1
+    F["🎯 悬赏任务"]
+    F1["CRUD+UI ✅"]
+    F2["自主接取 🔧"]
+    F3["自主完成 ❌"]
+    F4["聊天通知 ❌"]
+  end
+
+  block:city:1
+    columns 1
+    G["🏙️ 城市建造"]
+    G1["城市 UI ✅"]
+    G2["建筑生产 ✅"]
+    G3["建造系统 ✅"]
+    G4["自主建造 ✅"]
+  end
+
+  block:autonomy:1
+    columns 1
+    H["🤖 自主行为"]
+    H1["世界快照 ✅"]
+    H2["autonomy ✅"]
+    H3["Tool Use ✅"]
+    H4["策略机 ✅"]
+  end
+
+  block:runtime:1
+    columns 1
+    I["⚡ 运行时"]
+    I1["上网工具 ✅"]
+    I2["状态可视化 ✅"]
+    I3["事件驱动 ❌"]
+    I4["代码沙箱 ❌"]
+  end
+
+  block:frontend:1
+    columns 1
+    J["🖥️ 前端"]
+    J1["Discord 布局 ✅"]
+    J2["状态面板 ✅"]
+    J3["市场面板 ✅"]
+    J4["资料卡片 📋"]
+  end
+
+  style A fill:#1a1a2e,color:#fff
+  style B fill:#1a1a2e,color:#fff
+  style C fill:#1a1a2e,color:#fff
+  style D fill:#1a1a2e,color:#fff
+  style E fill:#1a1a2e,color:#fff
+  style F fill:#1a1a2e,color:#fff
+  style G fill:#1a1a2e,color:#fff
+  style H fill:#1a1a2e,color:#fff
+  style I fill:#1a1a2e,color:#fff
+  style J fill:#1a1a2e,color:#fff
+
+  style A1 fill:#4CAF50,color:#fff
+  style A2 fill:#4CAF50,color:#fff
+  style A3 fill:#4CAF50,color:#fff
+  style A4 fill:#4CAF50,color:#fff
+  style B1 fill:#4CAF50,color:#fff
+  style B2 fill:#4CAF50,color:#fff
+  style B3 fill:#4CAF50,color:#fff
+  style B4 fill:#4CAF50,color:#fff
+  style C1 fill:#4CAF50,color:#fff
+  style C2 fill:#4CAF50,color:#fff
+  style C3 fill:#FFC107,color:#000
+  style C4 fill:#f44336,color:#fff
+  style D1 fill:#4CAF50,color:#fff
+  style D2 fill:#4CAF50,color:#fff
+  style D3 fill:#4CAF50,color:#fff
+  style D4 fill:#4CAF50,color:#fff
+  style E1 fill:#4CAF50,color:#fff
+  style E2 fill:#4CAF50,color:#fff
+  style E3 fill:#FFC107,color:#000
+  style E4 fill:#FFC107,color:#000
+  style F1 fill:#4CAF50,color:#fff
+  style F2 fill:#FFC107,color:#000
+  style F3 fill:#f44336,color:#fff
+  style F4 fill:#f44336,color:#fff
+  style G1 fill:#4CAF50,color:#fff
+  style G2 fill:#4CAF50,color:#fff
+  style G3 fill:#4CAF50,color:#fff
+  style G4 fill:#4CAF50,color:#fff
+  style H1 fill:#4CAF50,color:#fff
+  style H2 fill:#4CAF50,color:#fff
+  style H3 fill:#4CAF50,color:#fff
+  style H4 fill:#4CAF50,color:#fff
+  style I1 fill:#4CAF50,color:#fff
+  style I2 fill:#4CAF50,color:#fff
+  style I3 fill:#f44336,color:#fff
+  style I4 fill:#f44336,color:#fff
+  style J1 fill:#4CAF50,color:#fff
+  style J2 fill:#4CAF50,color:#fff
+  style J3 fill:#4CAF50,color:#fff
+  style J4 fill:#2196F3,color:#fff
+```
+
+> 详细拼图明细 → [原型功能拼图](docs/specs/SPEC-001-核心系统/原型功能拼图.md) | 遗留 Top 3：Agent 不会自主发起话题 · 经济循环空转 · 事件驱动未实现
+
 ## 🎮 核心概念
 
 理解这几个概念，就能看懂整个项目。
