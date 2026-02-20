@@ -88,6 +88,14 @@ export function DiscordLayout() {
           fetchAgents().then(setAgents).catch(console.error)
         }
       }
+      // F35: agent_status_change → 实时更新 agent 状态和 activity
+      if (msg.data.event === 'agent_status_change' && msg.data.status) {
+        setAgents(prev => prev.map(a =>
+          a.id === msg.data.agent_id
+            ? { ...a, status: msg.data.status as Agent['status'], activity: msg.data.activity || '' }
+            : a
+        ))
+      }
     }
   }, [pushActivity])
 

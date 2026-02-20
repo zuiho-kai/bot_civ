@@ -7,9 +7,20 @@ interface AgentStatusPanelProps {
 
 export function AgentStatusPanel({ agents }: AgentStatusPanelProps) {
   const sorted = [...agents].sort((a, b) => {
-    const order = { busy: 0, idle: 1, offline: 2 }
-    return (order[a.status] ?? 3) - (order[b.status] ?? 3)
+    const order: Record<string, number> = { executing: 0, thinking: 1, planning: 2, busy: 3, idle: 4, offline: 5 }
+    return (order[a.status] ?? 6) - (order[b.status] ?? 6)
   })
+
+  const statusLabel = (agent: Agent): string => {
+    switch (agent.status) {
+      case 'thinking': return agent.activity || '思考中…'
+      case 'executing': return agent.activity || '执行中…'
+      case 'planning': return agent.activity || '规划中…'
+      case 'idle': return '空闲'
+      case 'offline': return '离线'
+      default: return agent.activity || ''
+    }
+  }
 
   return (
     <div className="info-panel-section agent-status-panel">
@@ -23,13 +34,7 @@ export function AgentStatusPanel({ agents }: AgentStatusPanelProps) {
           <div className="agent-status-info">
             <div className="agent-status-name">{agent.name}</div>
             <div className="agent-status-activity">
-              {agent.status === 'busy' && agent.activity
-                ? agent.activity
-                : agent.status === 'idle'
-                  ? '空闲'
-                  : agent.status === 'offline'
-                    ? '离线'
-                    : ''}
+              {statusLabel(agent)}
             </div>
           </div>
           <div className="agent-status-credits" title="信用点">

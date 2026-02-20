@@ -527,6 +527,26 @@
   background: var(--status-offline);
 }
 
+.agent-status-dot.thinking {
+  background: var(--color-warning);
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+.agent-status-dot.executing {
+  background: var(--status-busy);
+  animation: pulse-dot 0.8s ease-in-out infinite;
+}
+
+.agent-status-dot.planning {
+  background: var(--func-purple);
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
 .agent-status-info {
   min-width: 0;
   flex: 1;

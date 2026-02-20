@@ -4,7 +4,7 @@ export interface Agent {
   persona: string
   model: string
   avatar: string
-  status: 'idle' | 'busy' | 'offline'
+  status: 'idle' | 'thinking' | 'executing' | 'planning' | 'busy' | 'offline'
   credits: number
   speak_interval: number
   daily_free_quota: number
@@ -46,7 +46,7 @@ export interface WsNewMessage {
 export interface WsSystemEvent {
   type: 'system_event'
   data: {
-    event: 'agent_online' | 'agent_offline' | 'checkin' | 'purchase' | 'agent_action' | 'resource_transferred' | 'building_construction_started' | 'building_completed'
+    event: 'agent_online' | 'agent_offline' | 'checkin' | 'purchase' | 'agent_action' | 'agent_status_change' | 'resource_transferred' | 'building_construction_started' | 'building_completed'
     agent_id: number
     agent_name: string
     timestamp: string
@@ -56,6 +56,9 @@ export interface WsSystemEvent {
     price?: number
     action?: string
     reason?: string
+    // F35: agent_status_change 字段
+    status?: string
+    activity?: string
     // M5.1: 转赠事件字段
     from_agent_id?: number
     from_agent_name?: string
