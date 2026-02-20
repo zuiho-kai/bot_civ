@@ -163,6 +163,7 @@ async with async_session() as db:
 | R4 | fire-and-forget task 静默失败 | 低 | 记忆丢失但无告警 | `_extract_memory` 最外层 try/except + WARNING 日志；所有 provider 失败有明确日志 |
 | R5 | `_agent_reply_counts` 进程重启后归零 | 确定 | 重启后前 4 轮回复不触发提取 | 可接受——内存计数器是轻量设计，重启后自然恢复；不值得持久化 |
 | R6 | AsyncOpenAI 实例未复用导致连接开销 | 低 | 每次调用新建 TCP 连接 | 触发频率极低（每 agent 每 5 轮），连接开销可忽略；SR 附录已说明不缓存的理由 |
+| R7 | 对话内容 prompt 注入 | 低 | 恶意用户操纵摘要写入虚假记忆（≤100 字） | 影响范围有限（仅内部记忆条目，不泄露系统 prompt、不影响消息主流程）；后续迭代可引入 prompt 防御 |
 
 ---
 

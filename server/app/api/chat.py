@@ -15,6 +15,7 @@ from ..services.economy_service import economy_service
 from ..services.memory_service import memory_service
 from ..models import MemoryType
 from .schemas import MessageOut
+from openai import AsyncOpenAI
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["chat"])
@@ -37,6 +38,98 @@ wakeup_service = WakeupService()
 EXTRACT_EVERY = 5
 _agent_reply_counts: dict[int, int] = {}
 
+# M6.2-P1: LLM 记忆摘要
+MEMORY_SUMMARY_TIMEOUT = 15  # 秒
+MEMORY_SUMMARY_PROMPT = """你是一个记忆提取助手。请从以下对话中提取值得记住的关键信息。
+
+要求：
+- 提取关键事实、用户偏好、承诺、重要决定
+- 忽略寒暄、问候、无实质内容的闲聊
+- 用第三人称陈述句，每条信息独立完整
+- 如果对话没有值得记住的内容，返回"无有效记忆"
+- 输出不超过100字
+
+对话内容：
+{conversation}
+
+请输出摘要："""
+
+
+def _truncation_fallback(conversation: str) -> str:
+    """截断拼接兜底（与原逻辑一致）"""
+    return f"对话摘要: {conversation[:200]}"
+
+
+async def _call_llm_provider(provider, prompt: str) -> str:
+    """调用单个 LLM provider，返回文本结果"""
+    async with AsyncOpenAI(
+        api_key=provider.get_auth_token(),
+        base_url=provider.get_base_url(),
+    ) as client:
+        response = await client.chat.completions.create(
+            model=provider.model_id,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=200,  # 100 字 ≈ 150~200 token
+        )
+        if not response.choices:
+            return ""
+        content = response.choices[0].message.content or ""
+        return content.strip()
+
+
+async def _llm_summarize(conversation: str) -> str | None:
+    """
+    调用 LLM 生成对话摘要，带 fallback 链：
+    1. memory-summary-model 主供应商
+    2. memory-summary-model 备用供应商
+    3. 截断拼接兜底
+    返回 None 表示"无有效记忆"，调用方跳过保存。
+    """
+    from ..core.config import MODEL_REGISTRY
+
+    prompt = MEMORY_SUMMARY_PROMPT.format(conversation=conversation)
+
+    entry = MODEL_REGISTRY.get("memory-summary-model")
+    if not entry:
+        logger.warning("memory-summary-model not in MODEL_REGISTRY, using truncation fallback")
+        return _truncation_fallback(conversation)
+
+    for i, provider in enumerate(entry.providers):
+        if not provider.is_available():
+            continue
+        try:
+            summary = await asyncio.wait_for(
+                _call_llm_provider(provider, prompt),
+                timeout=MEMORY_SUMMARY_TIMEOUT,
+            )
+            if summary and len(summary.strip()) >= 5:
+                cleaned = summary.strip()
+                if "无有效记忆" in cleaned:
+                    logger.info("LLM determined no useful memory in conversation")
+                    return None
+                return cleaned[:100]
+            else:
+                logger.warning(
+                    "Memory summary validation failed (provider=%s, attempt=%d, len=%d), trying next",
+                    provider.name, i + 1, len(summary.strip()) if summary else 0,
+                )
+                continue
+        except asyncio.TimeoutError:
+            logger.warning(
+                "Memory summary timeout (provider=%s, attempt=%d, limit=%ds), trying next",
+                provider.name, i + 1, MEMORY_SUMMARY_TIMEOUT,
+            )
+            continue
+        except Exception as e:
+            logger.warning(
+                "Memory summary failed (provider=%s, attempt=%d): %s, trying next",
+                provider.name, i + 1, e,
+            )
+            continue
+
+    logger.warning("All memory summary providers failed, using truncation fallback")
+    return _truncation_fallback(conversation)
+
 
 async def _extract_memory(agent_id: int, recent_messages: list[dict]):
     """每 EXTRACT_EVERY 轮对话自动摘要为短期记忆"""
@@ -51,10 +144,12 @@ async def _extract_memory(agent_id: int, recent_messages: list[dict]):
             f"{m.get('name', '?')}: {m.get('content', '')}"
             for m in recent_messages[-EXTRACT_EVERY:]
         )
-        summary = f"对话摘要: {combined[:200]}"
+        summary = await _llm_summarize(combined)
+        if summary is None:
+            return  # LLM 判断无需记忆，跳过
         async with async_session() as db:
             await memory_service.save_memory(agent_id, summary, MemoryType.SHORT, db)
-        logger.info("Memory extracted for agent %d (reply #%d)", agent_id, count)
+        logger.info("Memory extracted for agent %d (reply #%d): %s", agent_id, count, summary[:50])
     except Exception as e:
         logger.warning("Memory extraction failed for agent %d: %s", agent_id, e)
 
@@ -84,9 +179,13 @@ async def delayed_send(agent_info: dict, reply: str, usage_info: dict | None, de
                     db.add(MemoryReference(message_id=msg.id, memory_id=mid))
             await db.commit()
 
-        # 记忆提取
+        # 记忆提取（fire-and-forget，不阻塞消息发送）
         history.append({"name": agent_info["agent_name"], "content": reply})
-        await _extract_memory(agent_info["agent_id"], history)
+        task = asyncio.create_task(
+            _extract_memory(agent_info["agent_id"], history)
+        )
+        _background_tasks.add(task)
+        task.add_done_callback(_background_tasks.discard)
         logger.info("Delayed send completed for agent %s (delay=%.1fs)", agent_info["agent_name"], delay)
     except Exception as e:
         logger.error("Delayed send failed for agent %s: %s", agent_info["agent_name"], e, exc_info=True)
