@@ -18,11 +18,11 @@
 ✅ 严格按 TDD 实施，需要改设计先更新 TDD 再改代码
 > TDD 是契约，改契约需要走流程。
 
-### DEV-6 改代码不 grep 引用 + 不复用 pattern + 不对照 TDD `🟡中频×2`
+### DEV-6 改代码不 grep 引用 + 不复用 pattern + 不对照 TDD `🟡中频×3`
 
-❌ 改了签名/返回值不 grep 全量引用 → 下游断裂；不 grep 同类实现从零写 → Code Review 出 P1；写完不对照 TDD → 字段名偏离
-✅ 改前 grep 同类 pattern 复用 → 改前 grep 全量引用确认 → 改后逐条对照 TDD → 改后涟漪推演（变量可达性+mock 同步）
-> 详见 [postmortem-dev-bug-6.md](../postmortems/postmortem-dev-bug-6.md)、[postmortem-dev-bug-11.md](../postmortems/postmortem-dev-bug-11.md)
+❌ 改了签名/返回值不 grep 全量引用 → 下游断裂；不 grep 同类实现从零写 → Code Review 出 P1；写完不对照 TDD → 字段名偏离；dormant/废弃子系统只改主调用链，遗漏 dev API/测试等次要入口
+✅ 改前 grep 同类 pattern 复用 → 改前 grep 全量引用确认 → 改后逐条对照 TDD → 改后涟漪推演（变量可达性+mock 同步）。**dormant/废弃操作额外要求：`grep -rn "函数名" server/` 穷举全部入口（主调用链+dev API+测试+import），逐个确认处置**
+> 详见 [postmortem-dev-bug-6.md](../postmortems/postmortem-dev-bug-6.md)、[postmortem-dev-bug-11.md](../postmortems/postmortem-dev-bug-11.md)。×3：策略 dormant 改 decide() 签名只改 tick()，遗漏 dev_trigger.py 解包崩溃（P0）+ dev API/测试仍活跃（P1×3）
 
 ### DEV-7 测试验证偷懒：pytest 冒充 ST / E2E 不跑 / 旧服务器没重启 `🟡中频×2`
 
@@ -84,3 +84,4 @@
 ❌ 把前端改动当"后端顺手改几行"，跳过阶段 2.5（UI 设计稿）和阶段 6.5（独立 agent 美学验收），CSS 动画参数/颜色选择凭直觉
 ✅ 任何涉及可见 UI 变更的任务（新状态颜色、动画、布局、文案），编码前必须产出 UI 设计稿；编码后必须启独立 agent + Playwright 做美学验收。**判定标准：改了 .css/.tsx 中的可见元素 = 需要走 2.5 + 6.5**
 > 归因 DEV-4×14。根因：低估前端改动视觉影响，心理上归类为"后端任务的附属"。
+> **美学验收必检项（DEV-BUG-20 补充）**：① hover 交互验证（Playwright `page.hover()` + 取背景计算值，确认与所在面板背景的对比度合理）② 动画舒适度（opacity 变化幅度 >0.5 = 闪烁风险，需人工确认或改用 glow/scale）③ CSS 变量上下文检查（变量语义是否匹配使用位置，如 sidebar 变量不能用在亮色面板）

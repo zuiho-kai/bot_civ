@@ -126,7 +126,7 @@ ST 状态：[未开始/已通过]
 - **方案/TDD 不等于已评审**：先提取待确认设计决策，逐个确认后才能编码
 - **动手前 Read 错题本（按需加载）**：错题本已按模块拆分为独立文件（`docs/runbooks/error-books/`）。加载策略：① 每次必读 `_index.md`（速查索引）+ `flow-rules.md`（通用流程，~60 行）② 根据改动模块只读对应文件：改 Agent → `backend-agent.md`；改 DB → `backend-db.md`；改 API/环境 → `backend-api-env.md`；改 React → `frontend-react.md`；改 UI → `frontend-ui.md`；改前后端对接 → `interface-rules.md`；用工具踩坑 → `tool-rules.md` ③ 不相关的文件不读。在代码修改 checklist 之前完成
 - **前端 API 层 checklist**（DEV-14）：改 `types.ts` 时必须打开后端 service 返回值逐字段比对（字段名/类型/可选性）；大量 UI 改动分步写分步检查，不一口气写完
-- **Write 强制分步**（DEV-8，六次复犯）：≤50 行可一次 Write；>50 行必须分步 — ① Write ≤50 行骨架 ② Edit 逐段填充，每段 ≤50 行 ③ 多段 Edit 可并行发出。Write 失败 1 次 → 立即切 Bash `cat <<'EOF' > file`。禁止同一方式连续失败超过 2 次
+- **Write 强制分步**（DEV-8，六次复犯）：≤50 行可一次 Write；>50 行必须分步 — ① Write ≤50 行骨架 ② Edit 逐段填充，每段 ≤50 行 ③ 多段 Edit 可并行发出。Write 失败 1 次 → 立即切 Bash `cat <<'EOF' > file`。禁止同一方式连续失败超过 2 次。**子 agent 同样适用：用 Task 启 agent 写文档时，prompt 必须包含"Write ≤50 行骨架 + Edit 分段填充，禁止一次 Write 超 50 行"。写大文档前先在文本中输出内容，确认完整后再调 Write（防丢失）。长对话中写文档优先用 Task 开新 agent（上下文干净，不易丢参数）**
 - **并行执行原则**：多个独立修改 → 一条消息并行发出所有 Edit；独立文件更新（CODE_MAP/progress/CLAUDE.md 等）→ 并行不串行；P0/P1 修复列表 → 逐条核销不漏项
 - **工具熔断**：同一工具连续失败 2 次同一错误 → 停下换思路，禁止第 3 次盲重试
 - **LLM 输出防御**（DEV-BUG-16）：接收 LLM 输出的 Pydantic model 必须：① 枚举/有限值字段加 validator 做 normalize + 拒绝非法值 ② 数值字段加 coerce ③ 字符串字段加 strip。**LLM 输出永远不可信，Pydantic model 是最后防线**

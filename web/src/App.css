@@ -497,7 +497,7 @@
 }
 
 .agent-status-item:hover {
-  background: var(--channel-hover);
+  background: var(--accent-subtle);
 }
 
 .agent-status-avatar {
@@ -529,22 +529,17 @@
 
 .agent-status-dot.thinking {
   background: var(--color-warning);
-  animation: pulse-dot 1.5s ease-in-out infinite;
+  box-shadow: 0 0 0 3px var(--info-panel-bg), 0 0 6px var(--color-warning);
 }
 
 .agent-status-dot.executing {
   background: var(--status-busy);
-  animation: pulse-dot 0.8s ease-in-out infinite;
+  box-shadow: 0 0 0 3px var(--info-panel-bg), 0 0 6px var(--status-busy);
 }
 
 .agent-status-dot.planning {
   background: var(--func-purple);
-  animation: pulse-dot 1.5s ease-in-out infinite;
-}
-
-@keyframes pulse-dot {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  box-shadow: 0 0 0 3px var(--info-panel-bg), 0 0 6px var(--func-purple);
 }
 
 .agent-status-info {
