@@ -14,7 +14,7 @@ from app.core.database import Base, engine, async_session
 from app.models import Agent, Building, AgentResource, MarketOrder
 from app.services.strategy_engine import Strategy, StrategyType, update_strategies, clear_strategies
 
-pytestmark = pytest.mark.asyncio
+pytestmark = [pytest.mark.asyncio, pytest.mark.skip(reason="策略系统 dormant（DEV-40）")]
 
 
 @pytest_asyncio.fixture(autouse=True)

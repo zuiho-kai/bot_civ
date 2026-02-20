@@ -82,14 +82,13 @@ async def test_decide_valid_json():
                return_value=("http://fake", "sk-fake", "test-model")), \
          patch("app.services.autonomy_service.AsyncOpenAI",
                return_value=mock_client):
-        decisions, strategies = await decide("fake snapshot")
+        decisions = await decide("fake snapshot")
 
     assert len(decisions) == 2
     assert decisions[0]["agent_id"] == 1
     assert decisions[0]["action"] == "checkin"
     assert decisions[1]["agent_id"] == 2
     assert decisions[1]["action"] == "rest"
-    assert strategies == []  # 旧格式无策略
 
 
 # ---------- 3. test_decide_invalid_json ----------
@@ -110,10 +109,9 @@ async def test_decide_invalid_json():
                return_value=("http://fake", "sk-fake", "test-model")), \
          patch("app.services.autonomy_service.AsyncOpenAI",
                return_value=mock_client):
-        decisions, strategies = await decide("fake snapshot")
+        decisions = await decide("fake snapshot")
 
     assert decisions == []
-    assert strategies == []
 
 
 # ---------- 4. test_execute_checkin ----------
@@ -281,7 +279,7 @@ async def test_personality_variance_three_rounds():
                    return_value=("http://fake", "sk-fake", "test-model")), \
              patch("app.services.autonomy_service.AsyncOpenAI",
                    return_value=mock_client):
-            decisions, _strategies = await decide("fake snapshot")
+            decisions = await decide("fake snapshot")
             all_decisions.append(decisions)
 
     # 验证 3 轮都产生了有效决策

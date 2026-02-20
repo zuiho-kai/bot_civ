@@ -226,7 +226,7 @@ async def decide(snapshot: str) -> list[dict]:
     """调用 LLM 做出行为决策，返回 actions 列表。
 
     策略系统 dormant（DEV-40），只返回立即行为。
-    兑容旧格式 {"actions": [...]} 和新格式 [...]。
+    兼容旧格式 {"actions": [...]} 和纯数组 [...]。
     """
     if not snapshot:
         return []

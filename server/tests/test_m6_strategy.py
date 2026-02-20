@@ -125,7 +125,7 @@ async def test_clear_strategies():
 # ── T2/T3: decide() 新格式测试 ──
 
 async def test_decide_new_format():
-    """LLM 返回新格式 {actions, strategies}，正确解析。"""
+    """LLM 返回旧格式 {actions, strategies}，策略 dormant 只提取 actions。"""
     from app.services.autonomy_service import decide
 
     new_format = json.dumps({
@@ -149,12 +149,10 @@ async def test_decide_new_format():
                return_value=("http://fake", "sk-fake", "test-model")), \
          patch("app.services.autonomy_service.AsyncOpenAI",
                return_value=mock_client):
-        actions, strategies = await decide("fake snapshot")
+        actions = await decide("fake snapshot")
 
     assert len(actions) == 1
     assert actions[0]["action"] == "eat"
-    assert len(strategies) == 1
-    assert strategies[0].strategy == StrategyType.KEEP_WORKING
 
 
 async def test_decide_legacy_fallback():
@@ -176,10 +174,9 @@ async def test_decide_legacy_fallback():
                return_value=("http://fake", "sk-fake", "test-model")), \
          patch("app.services.autonomy_service.AsyncOpenAI",
                return_value=mock_client):
-        actions, strategies = await decide("fake snapshot")
+        actions = await decide("fake snapshot")
 
     assert len(actions) == 1
-    assert strategies == []
 
 
 async def test_decide_reasoning_field_fallback():
@@ -202,15 +199,15 @@ async def test_decide_reasoning_field_fallback():
                return_value=("http://fake", "sk-fake", "test-model")), \
          patch("app.services.autonomy_service.AsyncOpenAI",
                return_value=mock_client):
-        actions, strategies = await decide("fake snapshot")
+        actions = await decide("fake snapshot")
 
     assert len(actions) == 1
     assert actions[0]["action"] == "rest"
-    assert strategies == []
 
 
 # ── T6: execute_strategies 测试 ──
 
+@pytest.mark.skip(reason="策略系统 dormant（DEV-40）")
 async def test_keep_working_executes_checkin():
     """keep_working 策略：agent 在目标建筑，自动 checkin。"""
     from app.services.autonomy_service import execute_strategies
@@ -233,6 +230,7 @@ async def test_keep_working_executes_checkin():
     assert stats["executed"] >= 1 or stats["skipped"] >= 0  # 取决于是否有可用岗位
 
 
+@pytest.mark.skip(reason="策略系统 dormant（DEV-40）")
 async def test_keep_working_stops_when_resource_reached():
     """keep_working 策略：资源达标时标记 completed。"""
     from app.services.autonomy_service import execute_strategies
@@ -254,6 +252,7 @@ async def test_keep_working_stops_when_resource_reached():
     assert stats["executed"] == 0
 
 
+@pytest.mark.skip(reason="策略系统 dormant（DEV-40）")
 async def test_opportunistic_buy_accepts_cheap_order():
     """opportunistic_buy 策略：市场有低价单时自动接单。"""
     from app.services.autonomy_service import execute_strategies
@@ -281,6 +280,7 @@ async def test_opportunistic_buy_accepts_cheap_order():
     assert stats["executed"] == 1
 
 
+@pytest.mark.skip(reason="策略系统 dormant（DEV-40）")
 async def test_opportunistic_buy_stops_when_enough():
     """opportunistic_buy 策略：库存达标时 completed。"""
     from app.services.autonomy_service import execute_strategies
@@ -301,6 +301,7 @@ async def test_opportunistic_buy_stops_when_enough():
     assert stats["executed"] == 0
 
 
+@pytest.mark.skip(reason="策略系统 dormant（DEV-40）")
 async def test_opportunistic_buy_skips_expensive_order():
     """opportunistic_buy 策略：单价超过阈值不接单。"""
     from app.services.autonomy_service import execute_strategies
@@ -327,6 +328,7 @@ async def test_opportunistic_buy_skips_expensive_order():
     assert stats["skipped"] >= 1
 
 
+@pytest.mark.skip(reason="策略系统 dormant（DEV-40）")
 async def test_opportunistic_buy_skips_multiple_orders():
     """opportunistic_buy 策略：多个订单都不满足条件，skipped 只计一次（DEV-BUG-18 回归测试）。"""
     from app.services.autonomy_service import execute_strategies
@@ -361,6 +363,7 @@ async def test_opportunistic_buy_skips_multiple_orders():
     assert stats["skipped"] == 1  # 只计一次，不是 3 次
 
 
+@pytest.mark.skip(reason="策略系统 dormant（DEV-40）")
 async def test_strategy_execution_isolates_failures():
     """策略执行异常隔离：一个 agent 的策略失败不影响其他 agent。"""
     from app.services.autonomy_service import execute_strategies

@@ -151,20 +151,16 @@ async def dev_probe_llm_decide(db: AsyncSession = Depends(get_db)):
     if not snapshot:
         return {"ok": False, "reason": "no agents"}
 
-    actions, strategies = await autonomy_service.decide(snapshot)
+    actions = await autonomy_service.decide(snapshot)
     return {
         "ok": True,
         "snapshot_len": len(snapshot),
         "actions_count": len(actions),
-        "strategies_count": len(strategies),
-        "strategies": [s.model_dump() for s in strategies],
         "actions": actions,
     }
 
 
 @router.post("/execute-strategies")
 async def dev_execute_strategies(db: AsyncSession = Depends(get_db)):
-    """开发用：手动触发一次策略自动机执行（不触发 LLM 决策）"""
-    from ..services.autonomy_service import execute_strategies
-    stats = await execute_strategies(db)
-    return stats
+    """开发用：策略系统 dormant（DEV-40），返回空结果。"""
+    return {"executed": 0, "skipped": 0, "completed": 0, "dormant": True}
