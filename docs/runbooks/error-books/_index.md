@@ -17,6 +17,8 @@
 | DEV-40 | 功能设计脱离基础设施现实 | 通用/流程 | 🟢 | flow-rules.md |
 | DEV-41 | 用户要求拉角色但不读角色定义文件 | 通用/流程 | 🟢 | flow-rules.md |
 | DEV-42 | 对话开头环境指令未执行就动手改文件 | 通用/流程 | 🟢 | flow-rules.md |
+| DEV-43 | CR 与五方评审混淆 | 通用/流程 | 🟢 | flow-rules.md |
+| DEV-44 | SR/AR 文档与代码签名不同步 + AR 风险面遗漏 | 通用/流程 | 🟢 | flow-rules.md |
 | DEV-3 | 联调问题用双终端来回排查 | 通用/工具 | 🟢 | tool-rules.md |
 | DEV-8 | Write 工具调用反复失败 | 通用/工具 | 🔴×5 | tool-rules.md |
 | DEV-12 | 外部 CLI 跳过环境探针+串行试错 | 通用/工具 | 🟡×2 | tool-rules.md |
@@ -45,6 +47,8 @@
 | DEV-BUG-16 | LLM 输出 Pydantic model 缺防御性 validator | 后端/Agent | 🟢 | backend-agent.md |
 | DEV-BUG-17 | direction 反向路径逻辑不完整 + 测试只覆盖正向 | 后端/Agent | 🟢 | backend-agent.md |
 | DEV-BUG-19 | P1 修复引入新 P1 — 修 bug 时缺边界分析 | 后端/Agent | 🟢 | backend-agent.md |
+| DEV-BUG-22 | LLM client 资源泄漏 + 外部返回值信任 | 后端/Agent | 🟢 | backend-agent.md |
+| DEV-BUG-23 | 测试 mock 覆盖不完整导致 fallback 链假绿 | 后端/Agent | 🟢 | backend-agent.md |
 | DEV-37 | Handler 先扣费后调用外部服务，失败白扣 | 后端/Agent | 🟢 | backend-agent.md |
 | DEV-38 | M6 P2 上网工具一次性写出 P0×4+P1×7+P2×7 | 后端/Agent | 🟢 | backend-agent.md |
 | DEV-BUG-1 | Windows Python 指向 Store stub | 后端/环境 | 🟢 | backend-api-env.md |

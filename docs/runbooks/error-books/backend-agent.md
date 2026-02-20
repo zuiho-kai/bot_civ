@@ -85,3 +85,17 @@
 - **根因**: P1 修复当"小修"，未对新代码做边界分析（null/作用域/mock）
 - **修复**: coerce_int 处理 null；min_price 统一作用域；TTL mock time；补 4 个边界测试
 - **防范**: 每条修复必须列影响面 + 边界值分析 + 分支矩阵测试。归因 B
+
+#### DEV-BUG-22 LLM client 资源泄漏 + 外部返回值信任 `🟢`
+
+- **场景**: _extract_memory 升级 LLM 摘要，AsyncOpenAI 未关闭 + response.choices 空时 IndexError
+- **根因**: new 外部 client 未用 context manager；信任 API 返回结构不做空值防御
+- **修复**: `async with AsyncOpenAI(...) as client` + `if not response.choices: return ""`
+- **防范**: 凡 new 外部 client 默认 context manager；外部 API 返回值必做空值/空列表防御
+
+#### DEV-BUG-23 测试 mock 覆盖不完整导致 fallback 链假绿 `🟢`
+
+- **场景**: ST fallback 测试未 patch MODEL_REGISTRY，缺 provider 全不可用 UT
+- **根因**: 测试编写时未检查被测函数所有外部依赖是否已 mock；fallback 测试矩阵不全
+- **修复**: 补 patch MODEL_REGISTRY + 新增 all_providers_unavailable UT
+- **防范**: 每个测试写完检查外部依赖 mock 完整性；fallback 链矩阵：全成功/部分失败/全失败/全不可用

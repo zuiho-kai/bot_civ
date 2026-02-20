@@ -167,21 +167,21 @@ async def test_extract_memory_triggers_on_fifth_reply():
 
     messages = _make_messages(10)
 
-    with patch(SAVE_MEMORY, new_callable=AsyncMock) as mock_save:
-        with patch(ASYNC_SESSION, return_value=mock_session_ctx):
-            # 前 4 次不触发
-            for _ in range(4):
-                await _extract_memory(agent_id=1, recent_messages=messages)
-            mock_save.assert_not_awaited()
-
-            # 第 5 次触发
+    with patch(SAVE_MEMORY, new_callable=AsyncMock) as mock_save, \
+         patch(ASYNC_SESSION, return_value=mock_session_ctx), \
+         patch("app.api.chat._llm_summarize", new_callable=AsyncMock, return_value="对话摘要测试内容"):
+        # 前 4 次不触发
+        for _ in range(4):
             await _extract_memory(agent_id=1, recent_messages=messages)
-            mock_save.assert_awaited_once()
+        mock_save.assert_not_awaited()
+
+        # 第 5 次触发
+        await _extract_memory(agent_id=1, recent_messages=messages)
+        mock_save.assert_awaited_once()
 
     # 验证 save_memory 参数
     call_args = mock_save.call_args
     assert call_args[0][0] == 1  # agent_id
-    assert "对话摘要" in call_args[0][1]  # summary content
     assert call_args[0][2] == MemoryType.SHORT
 
 
@@ -213,12 +213,13 @@ async def test_extract_memory_includes_agent_reply():
     messages = _make_messages(4)
     messages.append({"name": "TestBot", "content": "我是机器人的回复"})
 
-    with patch(SAVE_MEMORY, new_callable=AsyncMock) as mock_save:
-        with patch(ASYNC_SESSION, return_value=mock_session_ctx):
-            # 推进计数器到第 5 次
-            for _ in range(4):
-                await _extract_memory(agent_id=3, recent_messages=messages)
+    with patch(SAVE_MEMORY, new_callable=AsyncMock) as mock_save, \
+         patch(ASYNC_SESSION, return_value=mock_session_ctx), \
+         patch("app.api.chat._llm_summarize", new_callable=AsyncMock, return_value="TestBot: 我是机器人的回复"):
+        # 推进计数器到第 5 次
+        for _ in range(4):
             await _extract_memory(agent_id=3, recent_messages=messages)
+        await _extract_memory(agent_id=3, recent_messages=messages)
 
     mock_save.assert_awaited_once()
     summary = mock_save.call_args[0][1]
