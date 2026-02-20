@@ -90,6 +90,14 @@ MODEL_REGISTRY: dict[str, ModelEntry] = {
             ModelProvider(name="openrouter", model_id="google/gemma-3-12b-it"),
         ],
     ),
+    # 记忆摘要用的内部模型（双 provider fallback）
+    "memory-summary-model": ModelEntry(
+        display_name="Memory Summary (内部)",
+        providers=[
+            ModelProvider(name="openrouter", model_id="google/gemma-3-12b-it"),
+            ModelProvider(name="siliconflow", model_id="Qwen/Qwen2.5-7B-Instruct"),
+        ],
+    ),
 }
 
 
@@ -111,7 +119,7 @@ def list_available_models() -> list[dict]:
     """返回所有有可用供应商的模型列表（给前端下拉框用）"""
     result = []
     for key, entry in MODEL_REGISTRY.items():
-        if key == "wakeup-model":
+        if key in ("wakeup-model", "memory-summary-model"):
             continue  # 内部模型不暴露给前端
         provider = entry.get_active_provider()
         result.append({

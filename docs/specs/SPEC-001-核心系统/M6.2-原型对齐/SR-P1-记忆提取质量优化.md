@@ -132,7 +132,7 @@ async def _extract_memory(agent_id: int, recent_messages: list[dict]):
 #### 3.3.3 _llm_summarize 函数（新增，chat.py 模块级私有函数）
 
 ```python
-async def _llm_summarize(conversation: str) -> str:
+async def _llm_summarize(conversation: str) -> str | None:
     """
     调用 LLM 生成对话摘要，带 fallback 链：
     1. memory-summary-model 主供应商（openrouter gemma-3-12b）
