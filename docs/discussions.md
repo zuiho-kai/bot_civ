@@ -22,6 +22,7 @@
 **项目级通用：**
 - 竞品分析：MaiBot（单 Bot 仿生记忆框架），借鉴清单待用户审核
 - 竞品分析：Cat Café（三 AI 猫协作开发，CLI 子进程+MCP 回传+A2A 路由），C1-C8 借鉴清单
+- 竞品分析：CIVITAS2（古典社会模拟页游，Django+MariaDB，80+模型 13000+行），V1-V12 借鉴清单
 - 后端 FastAPI / 前端 React
 - 记忆存储：SQLite 单库（原 LanceDB 已决议移除，embedding 存 SQLite BLOB + NumPy 暴力搜索）
 - 流程规则：不同维度拆开辩论，记录必须可见
@@ -68,3 +69,4 @@
 | 2026-02-18 | 开发任务看板方案调研 | 技术调研 | 四种方案已对比，需求不明确，方案未定 | [查看](discussions/2026-02-18-task-board-research.md) |
 | 2026-02-18 | SSE vs WebSocket 技术调研 | 技术调研 | HTTP/2 下 SSE 消除连接数限制，推荐混合方案（聊天用 WebSocket，通知用 SSE） | [查看](discussions/2026-02-18-sse-vs-websocket-research.md) |
 | 2026-02-18 | Twitter/X 实时推送架构调研 | 技术调研 | WebSocket + SSE 混合协议；混合 Fanout 策略；Kafka + Redis Pub/Sub；推拉结合 + 分层优先级 | [查看](discussions/2026-02-18-twitter-realtime-push-architecture.md) |
+| 2025-07-14 | 竞品分析：CIVITAS2（古典社会模拟） | 竞品研究 | 80+模型 13000+行；四维属性/NPC就业/选举/战争；V1-V4 立即可用，V5-V8 纳入 M7-M8 | [查看](runbooks/postmortems/reference-civitas2-analysis.md) |
