@@ -5,7 +5,7 @@
 
 ## 当前状态
 
-- **阶段**: M6 Phase 1.1 完成（策略扩展 price_target/stockpile + priority/TTL）
+- **阶段**: M6 Phase 1.1 完成（策略系统半成品，已冻结，见遗留）
 - **技术栈**: FastAPI + WebSocket | React + Vite | SQLite + NumPy + 硅基流动 Embedding API
 - **仓库**: https://github.com/zuiho-kai/bot_civ
 - **测试**: UT 254/254 全绿 + M6 ST 15/15 不回归
@@ -29,14 +29,11 @@
 | 模型切换消耗信用点 | 0% | 锦上添花 |
 | 头像装饰/皮肤 | 0% | 纯装饰性 |
 
-### M6 完成度：~35%（P1 + P1.1 完成，P1.2 SR 已写）
+### M6 完成度：~20%（F31 策略系统冻结，其余未开始）
 
 | M6 功能点 | 状态 | 说明 |
 |-----------|------|------|
-| F31 策略自动机（P1） | ✅ 完成 | keep_working + opportunistic_buy，LLM 触发率 100% |
-| F31 策略扩展（P1.1） | ✅ 完成 | +price_target/stockpile + priority/TTL，254 UT + ST 15/15 不回归 |
-| F31 持久化+前端（P1.2） | 📋 SR 已写 | 内存→SQLite + 策略面板 + 执行日志 |
-| F31 事件驱动循环 | ❌ | 仍是 tick 轮询，非真正事件驱动 |
+| F31 策略自动机 | ⏸ 冻结 | 半成品，见遗留。代码在 main + m6-p1.1-p1.2 分支 |
 | F32 上网工具 | 📋 SR 已写 | SR-M6-Phase2.md（设计终端产出） |
 | F33 代码执行沙箱 | ❌ | Python 沙箱 |
 | F34 长任务编排 | ❌ | 多步计划持久化+自动推进 |
@@ -109,3 +106,10 @@
 - [ ] Radix UI 按需引入（复杂交互时试点）
 - [ ] Tailwind CSS 评估（组件数涨到 50+ 时重新评估）
 - [ ] SSE 改造（等 Redis Pub/Sub 一起做）
+- [ ] **F31 策略系统重做**（当前半成品，冻结中）
+  - 现状：4 种策略（keep_working/opportunistic_buy/price_target/stockpile）+ priority/TTL，代码在 main 上
+  - 问题：策略执行绑在每小时 LLM tick 里，两层架构退化成一层，ROI 为负（DEV-40）
+  - 缺失：独立调度（策略需要秒级/分钟级执行，当前只有小时级 tick）、持久化（内存存储重启丢失）、事件驱动（price_target/opportunistic_buy 需要响应市场事件）
+  - 失败原因：功能设计脱离基础设施现实 — 设计了高频操盘/囤货策略，但跑在每小时一次的轮询上
+  - 重做前提：先有独立调度循环或事件驱动架构，再重新设计策略类型
+  - 参考：postmortem-dev-40.md、两份 PM 评审意见（独立 PM + 人类替身 PM 均建议先改调度再做策略）
