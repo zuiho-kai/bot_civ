@@ -48,26 +48,23 @@ async def list_bounties(
 
 
 @router.post("/{bounty_id}/claim", response_model=BountyOut)
-async def claim_bounty(bounty_id: int, agent_id: int = Query(...), db: AsyncSession = Depends(get_db)):
-    bounty = await db.get(Bounty, bounty_id)
-    if not bounty:
-        raise HTTPException(404, "Bounty not found")
-
-    agent = await db.get(Agent, agent_id)
-    if not agent:
-        raise HTTPException(404, "Agent not found")
-
-    # Atomic claim: only succeeds if status is still "open"
-    result = await db.execute(
-        update(Bounty)
-        .where(Bounty.id == bounty_id, Bounty.status == "open")
-        .values(status="claimed", claimed_by=agent_id)
+async def claim_bounty_endpoint(
+    bounty_id: int,
+    agent_id: int = Query(...),  # 注意：当前无鉴权，内部系统调用；引入用户系统后需加 auth middleware
+    db: AsyncSession = Depends(get_db),
+):
+    from ..services.bounty_service import claim_bounty
+    result = await claim_bounty(
+        agent_id=agent_id, bounty_id=bounty_id, db=db,
     )
-    if result.rowcount == 0:
-        raise HTTPException(409, "Bounty is not open")
-
+    if not result["ok"]:
+        reason = result["reason"]
+        if "不存在" in reason:
+            raise HTTPException(404, reason)
+        else:
+            raise HTTPException(409, reason)
     await db.commit()
-    await db.refresh(bounty)
+    bounty = await db.get(Bounty, bounty_id)
     return bounty
 
 

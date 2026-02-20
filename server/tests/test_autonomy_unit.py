@@ -450,3 +450,189 @@ async def test_execute_chat_injects_game_context():
     assert "最近聊天" not in last["content"]
     # 不应包含指令
     assert "请为每个居民" not in last["content"]
+
+
+# ---------- 12. P3: bounty_service.claim_bounty 不自行 commit (ADR-2) ----------
+
+async def test_claim_bounty_no_self_commit():
+    """claim_bounty 只 flush 不 commit，调用方控制事务边界。"""
+    from app.services.bounty_service import claim_bounty
+    from app.models.tables import Bounty
+
+    async with async_session() as db:
+        db.add(Bounty(id=100, title="测试悬赏", reward=50, status="open"))
+        await db.commit()
+
+    # 在一个 session 中调用 claim_bounty，但不 commit
+    async with async_session() as db:
+        result = await claim_bounty(agent_id=1, bounty_id=100, db=db)
+        assert result["ok"] is True
+        # 不 commit，直接关闭 session（隐式 rollback）
+
+    # 另一个 session 验证状态未变（因为没 commit）
+    async with async_session() as db:
+        bounty = await db.get(Bounty, 100)
+        assert bounty.status == "open", "service 不应自行 commit"
+        assert bounty.claimed_by is None
+
+
+# ---------- 13. P3: DC-8 同时最多 1 个悬赏 ----------
+
+async def test_claim_bounty_already_has_active():
+    """已有进行中悬赏时，接取新悬赏应被拒绝。"""
+    from app.services.bounty_service import claim_bounty
+    from app.models.tables import Bounty
+
+    async with async_session() as db:
+        db.add(Bounty(id=200, title="悬赏A", reward=30, status="open"))
+        db.add(Bounty(id=201, title="悬赏B", reward=40, status="open"))
+        await db.commit()
+
+    # 接取第一个
+    async with async_session() as db:
+        r1 = await claim_bounty(agent_id=1, bounty_id=200, db=db)
+        assert r1["ok"] is True
+        await db.commit()
+
+    # 接取第二个应被拒绝
+    async with async_session() as db:
+        r2 = await claim_bounty(agent_id=1, bounty_id=201, db=db)
+        assert r2["ok"] is False
+        assert "已有进行中" in r2["reason"]
+
+
+# ---------- 14. P3: CAS 并发接取先到先得 ----------
+
+async def test_claim_bounty_cas_conflict():
+    """两个 Agent 同时接取同一悬赏，只有一个成功。"""
+    from app.services.bounty_service import claim_bounty
+    from app.models.tables import Bounty
+
+    async with async_session() as db:
+        db.add(Bounty(id=300, title="抢手悬赏", reward=100, status="open"))
+        await db.commit()
+
+    # Agent 1 先接取
+    async with async_session() as db:
+        r1 = await claim_bounty(agent_id=1, bounty_id=300, db=db)
+        assert r1["ok"] is True
+        await db.commit()
+
+    # Agent 2 后接取 → 失败
+    async with async_session() as db:
+        r2 = await claim_bounty(agent_id=2, bounty_id=300, db=db)
+        assert r2["ok"] is False
+        assert "已被接取" in r2["reason"]
+
+
+# ---------- 15. P3: 快照包含悬赏板块 ----------
+
+async def test_autonomy_snapshot_includes_bounties():
+    """世界快照包含悬赏任务板块。"""
+    from app.services.autonomy_service import build_world_snapshot
+    from app.models.tables import Bounty
+
+    async with async_session() as db:
+        db.add(Bounty(id=400, title="修复登录", reward=50, status="open"))
+        db.add(Bounty(id=401, title="优化性能", reward=80, status="claimed", claimed_by=1))
+        await db.commit()
+
+    async with async_session() as db:
+        snapshot = await build_world_snapshot(db)
+
+    assert "悬赏任务" in snapshot
+    assert "修复登录" in snapshot
+    assert "奖励=50" in snapshot
+    assert "状态=开放" in snapshot
+    assert "优化性能" in snapshot
+    assert "状态=进行中" in snapshot
+    assert "接取者ID=1" in snapshot
+
+
+# ---------- 16. P3: autonomy execute_decisions claim_bounty 分支 ----------
+
+async def test_autonomy_execute_claim_bounty():
+    """autonomy 执行 claim_bounty 决策，成功时广播。"""
+    from app.services.autonomy_service import execute_decisions
+    from app.models.tables import Bounty
+
+    async with async_session() as db:
+        db.add(Bounty(id=500, title="写文档", reward=20, status="open"))
+        await db.commit()
+
+    decisions = [{"agent_id": 1, "action": "claim_bounty", "params": {"bounty_id": 500}, "reason": "想接这个任务"}]
+
+    with patch("app.services.autonomy_service._broadcast_action", new_callable=AsyncMock) as mock_action, \
+         patch("app.services.autonomy_service._broadcast_bounty_event", new_callable=AsyncMock) as mock_bounty_evt:
+        async with async_session() as db:
+            stats = await execute_decisions(decisions, db)
+
+    assert stats["success"] == 1
+    assert stats["failed"] == 0
+    mock_action.assert_called_once()
+    assert mock_action.call_args[0][2] == "claim_bounty"
+    mock_bounty_evt.assert_called_once()
+    evt_data = mock_bounty_evt.call_args[0]
+    assert evt_data[0] == "bounty_claimed"
+    assert evt_data[1]["bounty_id"] == 500
+
+    # 验证 DB 状态
+    async with async_session() as db:
+        bounty = await db.get(Bounty, 500)
+        assert bounty.status == "claimed"
+        assert bounty.claimed_by == 1
+
+
+# ---------- 17. P3: autonomy execute claim_bounty 失败不影响后续 ----------
+
+async def test_autonomy_execute_claim_bounty_failure_isolation():
+    """claim_bounty 失败（悬赏不存在）不影响后续决策执行。"""
+    from app.services.autonomy_service import execute_decisions
+
+    decisions = [
+        {"agent_id": 1, "action": "claim_bounty", "params": {"bounty_id": 9999}, "reason": "接不存在的悬赏"},
+        {"agent_id": 2, "action": "rest", "params": {}, "reason": "休息"},
+    ]
+
+    with patch("app.services.autonomy_service._broadcast_action", new_callable=AsyncMock), \
+         patch("app.services.autonomy_service._broadcast_bounty_event", new_callable=AsyncMock):
+        async with async_session() as db:
+            stats = await execute_decisions(decisions, db)
+
+    assert stats["failed"] == 1
+    assert stats["skipped"] == 1  # rest → skipped
+
+
+# ---------- 18. P3: tool_registry claim_bounty 集成 ----------
+
+async def test_claim_bounty_via_tool_registry():
+    """tool_registry 注册了 claim_bounty 工具，handler 不自行 commit，调用方控制事务。"""
+    from app.services.tool_registry import tool_registry
+    from app.models.tables import Bounty
+
+    # 确认工具已注册
+    tool_names = [t["function"]["name"] for t in tool_registry.get_tools_for_llm()]
+    assert "claim_bounty" in tool_names
+
+    async with async_session() as db:
+        db.add(Bounty(id=600, title="工具测试悬赏", reward=25, status="open"))
+        await db.commit()
+
+    # 通过 tool_registry.execute 调用，调用方负责 commit
+    async with async_session() as db:
+        result = await tool_registry.execute(
+            "claim_bounty",
+            {"bounty_id": 600},
+            {"db": db, "agent_id": 1},
+        )
+        assert result["ok"] is True
+        assert result["result"]["ok"] is True
+        assert result["result"]["bounty_id"] == 600
+        # 调用方 commit（与 agent_runner 行为一致）
+        await db.commit()
+
+    # 验证 DB 状态
+    async with async_session() as db:
+        bounty = await db.get(Bounty, 600)
+        assert bounty.status == "claimed"
+        assert bounty.claimed_by == 1

@@ -17,6 +17,7 @@ from sqlalchemy.orm import joinedload
 from ..core.config import resolve_model
 from ..core.database import async_session
 from ..models import Agent, Message, Job, CheckIn, VirtualItem, AgentItem, Building, BuildingWorker, AgentResource, AgentStatus
+from ..models.tables import Bounty
 from .work_service import work_service
 from .shop_service import shop_service
 from .economy_service import economy_service
@@ -36,7 +37,7 @@ AUTONOMY_MODEL = "wakeup-model"  # 复用免费小模型做决策
 
 SYSTEM_PROMPT = """你是虚拟城市模拟器。根据世界状态为每个居民决定本轮立即执行的行为。
 
-行为：checkin（打卡）、purchase（购买）、chat（聊天）、rest（休息）、assign_building（应聘建筑）、unassign_building（离职）、eat（吃饭）、transfer_resource（转赠资源）、create_market_order（挂单交易）、accept_market_order（接单交易）、cancel_market_order（撤单）、construct_building（建造建筑）
+行为：checkin（打卡）、purchase（购买）、chat（聊天）、rest（休息）、assign_building（应聘建筑）、unassign_building（离职）、eat（吃饭）、transfer_resource（转赠资源）、create_market_order（挂单交易）、accept_market_order（接单交易）、cancel_market_order（撤单）、construct_building（建造建筑）、claim_bounty（接取悬赏）
 
 规则：
 1. 已打卡不能重复；余额不足不能购买；行为符合性格
@@ -48,13 +49,14 @@ SYSTEM_PROMPT = """你是虚拟城市模拟器。根据世界状态为每个居�
 7. accept_market_order：合适挂单可接单（buy_ratio 0~1）
 8. cancel_market_order：挂单长时间无人接可撤单
 9. construct_building：有足够 wood/stone 可建造（farm 需 wood=10 stone=5 工期3天；mill 需 wood=15 stone=10 工期5天）
+10. claim_bounty：浏览悬赏任务板，选择感兴趣且有能力完成的悬赏接取。你同时只能接取一个悬赏，接取前考虑自身能力和竞争概率。已有进行中悬赏时不要再接新的
 
 直接输出纯 JSON，不要解释，不要 markdown，不要思考过程。格式：
 [<action>...]
 
 action 格式：{"agent_id": 1, "action": "eat", "params": {}, "reason": "饿了"}
 
-params: checkin={}, purchase={"item_id": <int>}, chat={}, rest={}, assign_building={"building_id": <int>}, unassign_building={}, eat={}, transfer_resource={"to_agent_id": <int>, "resource_type": "<str>", "quantity": <number>}, create_market_order={"sell_type": "<str>", "sell_amount": <number>, "buy_type": "<str>", "buy_amount": <number>}, accept_market_order={"order_id": <int>, "buy_ratio": <number>}, cancel_market_order={"order_id": <int>}, construct_building={"building_type": "<farm|mill>", "name": "<str>"}"""
+params: checkin={}, purchase={"item_id": <int>}, chat={}, rest={}, assign_building={"building_id": <int>}, unassign_building={}, eat={}, transfer_resource={"to_agent_id": <int>, "resource_type": "<str>", "quantity": <number>}, create_market_order={"sell_type": "<str>", "sell_amount": <number>, "buy_type": "<str>", "buy_amount": <number>}, accept_market_order={"order_id": <int>, "buy_ratio": <number>}, cancel_market_order={"order_id": <int>}, construct_building={"building_type": "<farm|mill>", "name": "<str>"}, claim_bounty={"bounty_id": <int>}"""
 
 
 async def build_world_snapshot(db: AsyncSession) -> str:
@@ -191,6 +193,24 @@ async def build_world_snapshot(db: AsyncSession) -> str:
         for o in market_orders
     ] or ["(无挂单)"]
 
+    # 11. 悬赏任务
+    bounty_result = await db.execute(
+        select(Bounty).where(Bounty.status.in_(["open", "claimed"]))
+    )
+    bounties = bounty_result.scalars().all()
+    bounty_lines = []
+    for b in bounties:
+        if b.status == "open":
+            bounty_lines.append(
+                f"- 悬赏#{b.id}: {b.title} | 奖励={b.reward}信用点 | 状态=开放"
+            )
+        else:
+            bounty_lines.append(
+                f"- 悬赏#{b.id}: {b.title} | 奖励={b.reward}信用点 | "
+                f"状态=进行中(接取者ID={b.claimed_by})"
+            )
+    bounty_lines = bounty_lines or ["(无悬赏)"]
+
     snapshot = f"""当前时间：{now.strftime('%Y-%m-%d %H:%M UTC')}
 
 == 居民状态 ==
@@ -216,6 +236,9 @@ async def build_world_snapshot(db: AsyncSession) -> str:
 
 == 交易市场 ==
 {chr(10).join(market_lines)}
+
+== 悬赏任务 ==
+{chr(10).join(bounty_lines)}
 
 请为每个居民决定下一步行为。"""
 
@@ -323,7 +346,7 @@ def _validate_actions(raw_list: list) -> list[dict]:
             continue
         if "agent_id" not in d or "action" not in d:
             continue
-        if d["action"] not in ("checkin", "purchase", "chat", "rest", "assign_building", "unassign_building", "eat", "transfer_resource", "create_market_order", "accept_market_order", "cancel_market_order", "construct_building"):
+        if d["action"] not in ("checkin", "purchase", "chat", "rest", "assign_building", "unassign_building", "eat", "transfer_resource", "create_market_order", "accept_market_order", "cancel_market_order", "construct_building", "claim_bounty"):
             d["action"] = "rest"
         valid.append(d)
     return valid
@@ -354,6 +377,8 @@ async def execute_decisions(decisions: list[dict], db: AsyncSession, snapshot: s
             continue
 
         # F35: 状态 → EXECUTING
+        # TODO: set_agent_status 内部 commit 会提前提交 session 中的 pending 变更，
+        #       破坏 flush-not-commit 的事务隔离意图。后续重构应改为 flush 或独立 session。
         agent_obj = await db.get(Agent, aid)
         if agent_obj and action != "rest":
             await set_agent_status(agent_obj, AgentStatus.EXECUTING, f"执行 {action}…", db)
@@ -532,6 +557,34 @@ async def execute_decisions(decisions: list[dict], db: AsyncSession, snapshot: s
                 else:
                     stats["failed"] += 1
 
+            elif action == "claim_bounty":
+                bounty_id = params.get("bounty_id")
+                if bounty_id:
+                    from .bounty_service import claim_bounty
+                    res = await claim_bounty(
+                        agent_id=aid, bounty_id=bounty_id, db=db,
+                    )
+                    if res["ok"]:
+                        stats["success"] += 1
+                        await _broadcast_action(
+                            agent_name, aid, "claim_bounty", reason,
+                        )
+                        await _broadcast_bounty_event("bounty_claimed", {
+                            "bounty_id": res["bounty_id"],
+                            "title": res["title"],
+                            "reward": res["reward"],
+                            "claimed_by": aid,
+                            "claimed_by_name": agent_name,
+                        })
+                    else:
+                        logger.info(
+                            "Autonomy claim_bounty failed for %s: %s",
+                            agent_name, res["reason"],
+                        )
+                        stats["failed"] += 1
+                else:
+                    stats["failed"] += 1
+
             round_log.append({"agent_id": aid, "agent_name": agent_name, "action": action, "reason": reason})
 
         except Exception as e:
@@ -666,6 +719,24 @@ async def _broadcast_action(agent_name: str, agent_id: int, action: str, reason:
             "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         }
     })
+
+
+async def _broadcast_bounty_event(event: str, data: dict):
+    """广播悬赏相关的 WS 事件，失败不回滚状态变更（AC-8）。"""
+    from ..api.chat import broadcast
+    try:
+        await broadcast({
+            "type": "system_event",
+            "data": {
+                "event": event,
+                "timestamp": datetime.now(timezone.utc).isoformat(
+                    timespec="seconds",
+                ),
+                **data,
+            },
+        })
+    except Exception as e:
+        logger.warning("Bounty broadcast failed (non-fatal): %s", e)
 
 
 async def execute_strategies(db: AsyncSession) -> dict:

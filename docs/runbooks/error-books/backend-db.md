@@ -29,3 +29,10 @@
 - **场景**: M2 Phase 1 完整测试，多个 async task 同时写 SQLite
 - **根因 & 修复**: 见流程规则 DEV-10
 - **详细复盘**: [postmortem-dev-bug-7.md](../postmortems/postmortem-dev-bug-7.md)
+
+#### DEV-BUG-21 新增 handler/service 未对齐同模块事务模式 + 先查后改约束未原子化 `🟢`
+
+- **场景**: M6.2 P3 新增 `_handle_claim_bounty` handler 自行 commit（P0），`claim_bounty` 的 DC-8 约束分两步查改（P1）
+- **根因**: 写新函数前没 Read 同文件已有函数的事务/并发模式；"先 count 再 CAS"未合并为单条原子 SQL
+- **修复**: ① 删除 handler 中的 commit，对齐同文件其他 handler ② 将 NOT EXISTS 子查询合并到 CAS UPDATE WHERE 中
+- **规则**: 新增 service/handler 前先 Read 同模块已有函数确认事务模式；涉及"先查后改"的业务约束，必须合并到单条 SQL WHERE 做原子保证，禁止分两步

@@ -33,6 +33,7 @@
 | DEV-10b | SQLite+async 必须 BEGIN IMMEDIATE | 后端/DB | 🟢 | backend-db.md |
 | DEV-BUG-2 | httpx ASGITransport 不触发 lifespan | 后端/DB | 🟢 | backend-db.md |
 | DEV-BUG-7 | SQLite 并发锁定死循环 | 后端/DB | 🟢 | backend-db.md |
+| DEV-BUG-21 | 新增 handler 未对齐事务模式 + 先查后改未原子化 | 后端/DB | 🟢 | backend-db.md |
 | DEV-11b | 跨模块语义假设不一致 | 后端/Agent | 🟢 | backend-agent.md |
 | DEV-BUG-5 | @提及唤醒要求 WS 连接 | 后端/Agent | 🟢 | backend-agent.md |
 | DEV-BUG-6 | Plugin 连接反复断开 | 后端/Agent | 🟢 | backend-agent.md |

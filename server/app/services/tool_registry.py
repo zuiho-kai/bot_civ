@@ -202,4 +202,36 @@ CONSTRUCT_BUILDING_TOOL = ToolDefinition(
 
 tool_registry.register(CONSTRUCT_BUILDING_TOOL)
 
+
+# --- M6.2 悬赏接取工具 ---
+
+async def _handle_claim_bounty(arguments: dict, context: dict) -> dict:
+    """claim_bounty handler。agent_id 从 context 取。不自行 commit，由调用方控制事务边界。"""
+    from .bounty_service import claim_bounty
+    db = context["db"]
+    agent_id = context["agent_id"]
+    bounty_id = arguments["bounty_id"]
+    return await claim_bounty(
+        agent_id=agent_id, bounty_id=bounty_id, db=db,
+    )
+
+
+CLAIM_BOUNTY_TOOL = ToolDefinition(
+    name="claim_bounty",
+    description="接取悬赏任务，同时只能接取一个",
+    parameters={
+        "type": "object",
+        "properties": {
+            "bounty_id": {
+                "type": "integer",
+                "description": "要接取的悬赏任务 ID",
+            },
+        },
+        "required": ["bounty_id"],
+    },
+    handler=_handle_claim_bounty,
+)
+
+tool_registry.register(CLAIM_BOUNTY_TOOL)
+
 # TODO: 假设所有模型支持 function calling，后续按需补降级逻辑
