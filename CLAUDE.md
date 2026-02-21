@@ -6,7 +6,7 @@
 
 1. **全中文输出**：所有对话、文档、注释、commit message 一律使用中文
 2. **IR 五方评审**：IR 完成后用子 agent 启动五方评审，角色文件见 `docs/personas/`（architect / tech-lead / qa-lead / developer / human-proxy-pm），每个角色同时读 `human-proxy-knowledge.md`
-3. **评审问题逐个对齐**：待确认问题逐个提交用户决策，禁止打包。评审展示完整规则（门禁模板 + 共识项/分歧项格式 + 决策地图 + 纪要模板 + 存档规则）→ 详见 [`docs/workflows/checklist-milestone-gate.md`](docs/workflows/checklist-milestone-gate.md) "决策呈现规则"一节
+3. **决策提交三原则（DEV-51，全局硬规则）**：**任何时候**向用户提交决策请求（不限于评审/脑暴，日常对话同样适用），必须满足：① 每个子决策独立呈现、独立确认（如果一个决策的答案会改变后续决策的选项空间 = 复合决策，必须先拆再按依赖顺序逐个提交）② 每个数字/结论附推导来源（背景不可省略）③ 每次提到方案自带一句话描述（禁止假设用户记得全文）。评审展示完整规则 → 详见 [`docs/workflows/checklist-milestone-gate.md`](docs/workflows/checklist-milestone-gate.md) "决策呈现规则"一节
 4. **评审方式选择**：里程碑级 IR 评审用 TeamCreate 开 team（复用上下文，多轮追问不重新加载知识库）；SR 级轻量审核用 Task 单次调用即可
 
 ## 核心规则
@@ -93,6 +93,7 @@ ST 状态：[未开始/已通过]
 
 **通用规则**：
 - **方案/TDD 不等于已评审**：先提取待确认设计决策，逐个确认后才能编码
+- **提问即交权（DEV-53，硬规则）**：同一轮消息禁止"提问 + 执行"并存。如果本轮输出包含向用户的提问/确认请求，则本轮禁止同时发出任何 Task/TeamCreate/Write/Edit/Bash 调用（纯 Read 查资料除外）。提问和动手必须分属不同轮次。提问后唯一允许的动作是等用户回答
 - **动手前 Read 错题本（按需加载）**：错题本已按模块拆分为独立文件（`docs/runbooks/error-books/`）。加载策略：① 每次必读 `_index.md`（速查索引）+ `flow-rules.md`（通用流程，~60 行）② 根据改动模块只读对应文件：改 Agent → `backend-agent.md`；改 DB → `backend-db.md`；改 API/环境 → `backend-api-env.md`；改 React → `frontend-react.md`；改 UI → `frontend-ui.md`；改前后端对接 → `interface-rules.md`；用工具踩坑 → `tool-rules.md` ③ 不相关的文件不读。在代码修改 checklist 之前完成
 - **前端 API 层 checklist**（DEV-14）：改 `types.ts` 时必须打开后端 service 返回值逐字段比对（字段名/类型/可选性）；大量 UI 改动分步写分步检查，不一口气写完
 - **Write 强制分步**（DEV-8，六次复犯）：≤50 行可一次 Write；>50 行必须分步 — ① Write ≤50 行骨架 ② Edit 逐段填充，每段 ≤50 行 ③ 多段 Edit 可并行发出。Write 失败 1 次 → 立即切 Bash `cat <<'EOF' > file`。禁止同一方式连续失败超过 2 次。**子 agent 同样适用：用 Task 启 agent 写文档时，prompt 必须包含"Write ≤50 行骨架 + Edit 分段填充，禁止一次 Write 超 50 行"。写大文档前先在文本中输出内容，确认完整后再调 Write（防丢失）。长对话中写文档优先用 Task 开新 agent（上下文干净，不易丢参数）**
