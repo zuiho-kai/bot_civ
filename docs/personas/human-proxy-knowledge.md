@@ -132,6 +132,19 @@
 | M5.2 autonomy_loop | 一步到位（API+前端+Tool Use+autonomy_loop） | 分阶段 | Agent 能真正自主挂单/接单，符合产品愿景 |
 | M5.2 碎片处理 | 不需要特殊处理 | 自动取消 / 扫尾 | 最小单位 0.01 + round(x,2) 天然避免碎片 |
 | 交易限同城 | 转赠和挂单/接单限同城 | 全局交易 | 个人背包基于所在区域，物理世界交易是本地的；为未来跨城贸易留空间 |
+| M6.3 四维属性 | health/energy/satiety/mood 四维耦合 | 三维（无 energy） | stamina→health；新增 energy 维度完善行为成本模型；health 恢复与饱腹度挂钩形成"必须吃饭"压力 |
+| M6.3 食物差异化 | eat_food 统一入口 + food_type 参数（flour/apple） | 单一食物 | flour 主饱腹（生存刚需），apple 主精力+心情（副业续航），两种搭配形成采集需求 |
+| M6.3 副业系统 | 采集(gather)+加工(process)，消耗递增，第1次免费 | 无副业 | 副业是早期生存手段，递增消耗逼 Agent 转向建筑规模化生产 |
+| M6.3 建筑配方 | 5种建筑（farm/mill/sawmill/lumber_camp/quarry），工期用人日 | 旧配方 | 新增伐木场+采石场，工期改人日支持多人加速 |
+| M6.3 雇佣系统 | fixed+ratio 双工资模式，去掉 job_dissatisfaction | 不满度数值驱动 | 暴露真实状态让 Agent 自主感知（欠薪天数/市场最高工资），不用硬编码数值驱动行为 |
+| M6.3 工资发放 | 工作时发放，全额或全不发+双向通知 | 0点统一发放 | 有产出才有工资；仓库不够就不发，工人和老板都能看到 |
+| M6.3 多重受雇 | 允许受雇多个建筑，每天只能工作一次 | 单一雇佣 | apply_job 自动批准上岗，去掉 approve_job |
+| M6.3 取消固定 tick | 事件驱动 + Agent 自定闹钟(5~120min) + Attention Gate(Glance/Think) | 15分钟固定 tick | 固定 tick = cron job，不符合真实行为模式；Agent 自己定闹钟+订阅事件，有事才醒 |
+| M6.3 Glance 预判 | Phase1 规则 Glance（零 LLM），Phase2 升级 LLM Glance | 硬编码 rest 跳过 | 不是"跳不跳"而是"谁来判断"；规则先行，LLM 后补 |
+| M6.3 事件分类 | 硬触发/硬忽略/模糊区三类 | 全部走 LLM | mentioned_in_chat/daily_settle/unpaid_wage 直接 Think；自己触发的/冷却期重复直接丢弃 |
+| M6.3 事件优先级 | 双层方案（系统层硬优先级+调度层 priority heap） | 极简 P0/P1 | 单层无排序会产生结构性偏差（先到先服务=随机系统）；双层把问题分成两个正交空间 |
+| M6.3 事件风暴防护 | 三层（L1 debounce + L2 优先级队列 + L3 熔断降级） | 无防护 | 资源刷新+多人对话+价格波动可能同时产生大量事件 |
+| M6.3 可观测性 | MVP 6项指标 | 4项/8项 | 4项看不到过滤层失控；8项中假阴性率 MVP 无法准确测量；6项是信息闭环最小集 |
 
 ---
 
@@ -152,3 +165,4 @@
 | 2026-02-18 | M5 范围裁剪：官府田唯一建筑、wheat_flour 唯一资源、交易市场→M6、转赠→M5.1、信用点交易走聊天+转赠、岗位竞争机制（应聘/离职） | TDD-M5 AR 讨论 |
 | 2026-02-19 | M5.1 IR 评审：Tool Use 不做降级（留 TODO）、转赠是私人行为不在聊天区显示、交易系统独立路由、Agent CLI 留 M6、SSE 不做 | M5.1 IR PM 评审 |
 | 2026-02-20 | M5.2 五方评审：交易市场改为资源↔信用点、frozen语义=可用/冻结分离、float+round精度、SQLite事务串行、autonomy一步到位、城市独立路由/city/:id/market、交易限同城、废弃/trade | M5.2 IR 五方评审 |
+| 2026-02-22 | M6.3 五方脑暴拍板（DC-1~DC-35）：四维属性、食物差异化、副业系统、建筑配方改造、雇佣工资、取消固定tick改事件驱动、Glance/Think两阶段、事件风暴防护、可观测性6项 | M6.3 IR 五方脑暴 |

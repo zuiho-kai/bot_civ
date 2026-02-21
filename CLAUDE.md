@@ -65,7 +65,7 @@
 触发原因：[CR 发现 P0 / ST 失败 / 用户指出 / ...]
 归因路径：[A：checklist 有但跳过 / B：有但没拦住 / C：新场景 / D：架构问题]
 已 Read 目标错题本记录规则：[是，行数上限=N / 否 → 必须先 Read]
-落盘目标：[flow-rules.md / tool-rules.md / backend-agent.md / backend-db.md / backend-api-env.md / frontend-ui.md / frontend-react.md / interface-rules.md]
+落盘目标：[flow-gate.md / flow-code-habit.md / flow-design.md / flow-brainstorm.md / tool-rules.md / backend-agent.md / backend-db.md / backend-api-env.md / frontend-ui.md / frontend-react.md / interface-rules.md]
 草稿预览（≤行数上限，超则必须精简后重填）：
 [在此写完整条目草稿，写完数行数确认不超限]
 checklist 修改：[需要改第 X 条 / 新增 / 不需要]
@@ -94,7 +94,7 @@ ST 状态：[未开始/已通过]
 **通用规则**：
 - **方案/TDD 不等于已评审**：先提取待确认设计决策，逐个确认后才能编码
 - **提问即交权（DEV-53，硬规则）**：同一轮消息禁止"提问 + 执行"并存。如果本轮输出包含向用户的提问/确认请求，则本轮禁止同时发出任何 Task/TeamCreate/Write/Edit/Bash 调用（纯 Read 查资料除外）。提问和动手必须分属不同轮次。提问后唯一允许的动作是等用户回答
-- **动手前 Read 错题本（按需加载）**：错题本已按模块拆分为独立文件（`docs/runbooks/error-books/`）。加载策略：① 每次必读 `_index.md`（速查索引）+ `flow-rules.md`（通用流程，~60 行）② 根据改动模块只读对应文件：改 Agent → `backend-agent.md`；改 DB → `backend-db.md`；改 API/环境 → `backend-api-env.md`；改 React → `frontend-react.md`；改 UI → `frontend-ui.md`；改前后端对接 → `interface-rules.md`；用工具踩坑 → `tool-rules.md` ③ 不相关的文件不读。在代码修改 checklist 之前完成
+- **动手前 Read 错题本（按需加载）**：错题本已按模块拆分为独立文件（`docs/runbooks/error-books/`）。加载策略：① 每次必读 `_index.md`（速查索引）+ `flow-rules.md`（索引页，~30 行）② 根据任务类型读对应流程子文件：走门控 → `flow-gate.md`；改代码 → `flow-code-habit.md`；写 IR/SR/AR → `flow-design.md`；拉脑暴/评审 → `flow-brainstorm.md` ③ 根据改动模块读对应文件：改 Agent → `backend-agent.md`；改 DB → `backend-db.md`；改 API/环境 → `backend-api-env.md`；改 React → `frontend-react.md`；改 UI → `frontend-ui.md`；改前后端对接 → `interface-rules.md`；用工具踩坑 → `tool-rules.md` ④ 不相关的文件不读。在代码修改 checklist 之前完成
 - **前端 API 层 checklist**（DEV-14）：改 `types.ts` 时必须打开后端 service 返回值逐字段比对（字段名/类型/可选性）；大量 UI 改动分步写分步检查，不一口气写完
 - **Write 强制分步**（DEV-8，六次复犯）：≤50 行可一次 Write；>50 行必须分步 — ① Write ≤50 行骨架 ② Edit 逐段填充，每段 ≤50 行 ③ 多段 Edit 可并行发出。Write 失败 1 次 → 立即切 Bash `cat <<'EOF' > file`。禁止同一方式连续失败超过 2 次。**子 agent 同样适用：用 Task 启 agent 写文档时，prompt 必须包含"Write ≤50 行骨架 + Edit 分段填充，禁止一次 Write 超 50 行"。写大文档前先在文本中输出内容，确认完整后再调 Write（防丢失）。长对话中写文档优先用 Task 开新 agent（上下文干净，不易丢参数）**
 - **并行执行原则**：多个独立修改 → 一条消息并行发出所有 Edit；独立文件更新（CODE_MAP/progress/CLAUDE.md 等）→ 并行不串行；P0/P1 修复列表 → 逐条核销不漏项
@@ -104,6 +104,7 @@ ST 状态：[未开始/已通过]
 - **网页浏览**（DEV-31）：文档网站/SPA → 必须 Playwright（curl 拿不到 JS 渲染内容）；纯 API/静态页 → curl 可用。优先级：Playwright → jina.ai → WebFetch
 - **UI 美学验收**：阶段 6.5 必须用 Task 启独立 agent + Playwright MCP 审查，不能自己审自己（与 CR 规则一致）
 - **网络代理**（硬规则）：所有外网请求默认走 `http://127.0.0.1:7890`（curl 加 `--proxy`，Playwright 在启动时配置）。直连失败不重试，直接报错
+- **图片文件统一存放**（硬规则）：所有截图/图片文件统一存 `docs/images/`，禁止丢根目录。Playwright 截图必须指定 `filename` 参数且带 `docs/images/` 前缀（如 `docs/images/xxx.png`）
 
 ## SR 写作规范
 

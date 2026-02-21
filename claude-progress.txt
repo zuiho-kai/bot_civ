@@ -5,10 +5,10 @@
 
 ## 当前状态
 
-- **阶段**: M6 Phase 3 完成（F35 Agent 状态可视化）
+- **阶段**: M6.2 P4 完成（公共记忆种子数据）
 - **技术栈**: FastAPI + WebSocket | React + Vite | SQLite + NumPy + 硅基流动 Embedding API
 - **仓库**: https://github.com/zuiho-kai/bot_civ
-- **测试**: UT 239/239 全绿 + M6 P3 ST 13/13 全绿
+- **测试**: UT 266/266 全绿（含 P4 UT 9 + ST 3）
 
 ## 原型需求差距评估（2026-02-20 设计终端产出）
 
@@ -23,7 +23,7 @@
 | 页游城市（打卡/商店/建造/交易） | 95% | — |
 | Agent 独立人格 | 90% | 缺 SOUL.md 级深度人格 |
 | 短期/长期记忆 | 90% | 缺短→长自动升级 |
-| 公共记忆 | 80% | 框架有，知识库内容空 |
+| 公共记忆 | 95% | 种子数据 13 条已填充，缺短→长自动升级 |
 | 悬赏任务 | 70% | 后端有，缺前端集成+自动验证 |
 | 游戏币（第二货币） | 0% | 原型阶段信用点够用，可延后 |
 | 模型切换消耗信用点 | 0% | 锦上添花 |
@@ -47,6 +47,38 @@
 4. F33 代码沙箱 — 锦上添花
 
 ## 最近活动
+
+### 2026-02-21
+- M6.2 全量代码走读完成（P1-P4 四个子阶段）
+
+  **P1 记忆提取 — 从截断变 LLM 摘要**
+  - chat.py:58-60 保留截断兜底 `conversation[:200]`，主路径走 `_llm_summarize()`（chat.py:80-131）
+  - 最近 5 轮对话 → gemma-3-12b 摘要（100 字以内），超时 15s 自动切备用 qwen2.5-7b，全挂走截断
+  - 关键判断（chat.py:107-109）：LLM 返回"无有效记忆"时跳过保存，过滤"哈哈""嗯嗯"等垃圾记忆
+  - fire-and-forget（chat.py:182-185）：`_extract_memory` 丢进 `_background_tasks` set，不阻塞响应
+
+  **P2 SOUL 深度人格 — 从一句话到结构化 prompt**
+  - agent_runner.py:98-107 分支：有 personality_json 走 SOUL_PROMPT_TEMPLATE，否则走原模板
+  - `_build_soul_block()`（agent_runner.py:51-69）格式化 dict → 核心价值观/说话风格/擅长领域/情感倾向/口头禅/关系/行为禁区
+  - relationships 字段让 Agent 对特定人调整语气（如"又赊账？行吧老规矩记着"）
+  - 缓存刷新（agent_runner.py:285-288）：personality_json 变更时原地更新 runner，不用旧缓存（CR 修出来的）
+
+  **P3 悬赏自主接取 — Agent 能自己看悬赏板并抢单**
+  - autonomy_service.py:196-212 世界快照第 11 板块，每小时 tick 时 LLM 看到开放/进行中悬赏
+  - SYSTEM_PROMPT（autonomy_service.py:52）约束：同时只能接一个，接取前考虑自身能力和竞争概率
+  - bounty_service.py:42-55 CAS 实现：一条 UPDATE 同时检查悬赏 open + 无人抢 + Agent 无进行中悬赏
+  - rowcount==0 时查原因区分"被抢了"vs"你已有悬赏"（bounty_service.py:58-71）
+
+  **P4 公共记忆种子数据**
+  - public_memories.json 13 条世界规则（经济/生产链/社区公约/属性系统）
+  - main.py `seed_public_memories()` 启动时按 content 差集插入，begin_nested() 包裹每条，部分失败不影响其他
+  - UT 9/9 + ST 3/3 + 全量 266/266 全绿
+  - CR 二次通过 P0=0 P1=0（P1×3 修复：savepoint 替代 delete、差集替代 count>0）
+  - 归因落盘：DEV-6 扩展（跨文件 grep 外部 API 事务模式）+ DEV-47 新增（批量幂等考虑部分成功）
+
+  **缺口**
+  - 种子数据第 8 条"短期记忆自动升级为长期记忆"实际未实现（只是世界观设定，代码无升级机制）
+  - 悬赏自动验证未做（只有接取没有交付闭环）
 
 ### 2026-02-21
 - M6 Phase 3（F35 Agent 状态可视化）完成：ST 13/13 全绿 + pytest 239/239 全绿

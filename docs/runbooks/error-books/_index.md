@@ -1,25 +1,27 @@
 # 错题本速查索引
 
-> **加载规则**：每次必读本文件 + `flow-rules.md`，再根据改动模块读对应文件。
+> **加载规则**：每次必读本文件 + `flow-rules.md`（索引页），再根据任务类型读对应子文件。
 
 | 编号 | 一句话 | 标签 | 频率 | 文件 |
 |------|--------|------|------|------|
-| DEV-4 | 跳过流程门控直接编码 | 通用/流程 | 🔴×17 | flow-rules.md |
-| DEV-5 | 实施不遵循 TDD 文档 | 通用/流程 | 🟢 | flow-rules.md |
-| DEV-6 | 改代码不 grep 引用/不复用 pattern/不对照 TDD | 通用/流程 | 🟡×3 | flow-rules.md |
-| DEV-7 | pytest 冒充 ST / E2E 不跑 / 旧服务器没重启 | 通用/流程 | 🟡×2 | flow-rules.md |
-| DEV-24 | 更新文档只改局部不扫全文 | 通用/流程 | 🟡×2 | flow-rules.md |
-| DEV-29 | P0/P1 修复列表漏项+执行碎片化 | 通用/流程 | 🟢 | flow-rules.md |
-| DEV-32 | 门控表缺序号→TDD 被误当起始动作 | 通用/流程 | 🟢 | flow-rules.md |
-| DEV-33 | pytest 冒充 ST + P0/P1 归零跳过归因 | 通用/流程 | 🟡×5 | flow-rules.md |
-| DEV-34 | SR 阶段门禁当建议跳过 | 通用/流程 | 🟢 | flow-rules.md |
-| DEV-38 | 编码前跳过 AR → 安全/异常/配置全面失守 | 通用/流程 | 🟢 | flow-rules.md |
-| DEV-40 | 功能设计脱离基础设施现实 | 通用/流程 | 🟢 | flow-rules.md |
-| DEV-41 | 用户要求拉角色但不读角色定义文件 | 通用/流程 | 🟢 | flow-rules.md |
-| DEV-42 | 对话开头环境指令未执行就动手改文件 | 通用/流程 | 🟢 | flow-rules.md |
-| DEV-43 | CR 与五方评审混淆 | 通用/流程 | 🟢 | flow-rules.md |
-| DEV-44 | SR/AR 文档与代码签名不同步 + AR 风险面遗漏 | 通用/流程 | 🟢 | flow-rules.md |
-| DEV-45 | 批量/seed 幂等设计未考虑"部分成功"中间状态 | 通用/流程 | 🟢 | flow-rules.md |
+| DEV-4 | 跳过流程门控直接编码 | 通用/流程 | 🔴×17 | flow-gate.md |
+| DEV-5 | 实施不遵循 TDD 文档 | 通用/流程 | 🟢 | flow-gate.md |
+| DEV-6 | 改代码不 grep 引用/不复用 pattern/不对照 TDD | 通用/流程 | 🟡×3 | flow-code-habit.md |
+| ~~DEV-7~~ | → 已合并到 DEV-33 | — | — | flow-gate.md |
+| DEV-24 | 更新文档只改局部不扫全文 | 通用/流程 | 🟡×2 | flow-code-habit.md |
+| DEV-29 | P0/P1 修复列表漏项+执行碎片化 | 通用/流程 | 🟢 | flow-code-habit.md |
+| DEV-32 | 门控表缺序号→TDD 被误当起始动作 | 通用/流程 | 🟢 | flow-gate.md |
+| DEV-33 | pytest 冒充 ST + 归零跳过归因（含 DEV-7） | 通用/流程 | 🟡×8 | flow-gate.md |
+| DEV-34 | SR 阶段门禁当建议跳过 | 通用/流程 | 🟢 | flow-gate.md |
+| DEV-38 | 编码前跳过 AR → 安全/异常/配置全面失守 | 通用/流程 | 🟢 | flow-design.md |
+| DEV-40 | 功能设计脱离基础设施现实 | 通用/流程 | 🟢 | flow-design.md |
+| DEV-41 | 用户要求拉角色但不读角色定义文件 | 通用/流程 | 🟢 | flow-gate.md |
+| DEV-42 | 对话开头环境指令未执行就动手改文件 | 通用/流程 | 🟢 | flow-gate.md |
+| DEV-43 | CR 与五方评审混淆 | 通用/流程 | 🟢 | flow-gate.md |
+| DEV-44 | SR/AR 文档与代码签名不同步 + AR 风险面遗漏 | 通用/流程 | 🟢 | flow-design.md |
+| DEV-45 | 跳过阶段 0 直接写 IR | 通用/流程 | 🟢 | flow-design.md |
+| DEV-46 | 打包评审 + 评审缺背景 | 通用/流程 | 🟢 | flow-brainstorm.md |
+| DEV-47 | 批量/seed 幂等设计未考虑"部分成功"中间状态 | 通用/流程 | 🟢 | flow-code-habit.md |
 | DEV-3 | 联调问题用双终端来回排查 | 通用/工具 | 🟢 | tool-rules.md |
 | DEV-8 | Write 工具调用反复失败 | 通用/工具 | 🔴×5 | tool-rules.md |
 | DEV-12 | 外部 CLI 跳过环境探针+串行试错 | 通用/工具 | 🟡×2 | tool-rules.md |
@@ -63,8 +65,15 @@
 | DEV-BUG-11 | UI 颜色硬编码不跟主题 | 前端/UI | 🟢 | frontend-ui.md |
 | DEV-BUG-13 | 体验问题修复耗时过长 | 前端/UI | 🟢 | frontend-ui.md |
 | DEV-BUG-20 | 美学审查漏检 hover 上下文 + 动画舒适度 | 前端/UI | 🟢 | frontend-ui.md |
-| DEV-39 | 前端改动跳过 UI 设计稿 + 美学验收 | 通用/流程 | 🟡×2 | flow-rules.md |
+| DEV-39 | 前端改动跳过 UI 设计稿 + 美学验收 | 通用/流程 | 🟡×2 | flow-design.md |
 | DEV-9 | useEffect 外部连接必须幂等 | 前端/React | 🟢 | frontend-react.md |
 | DEV-10f | useEffect 依赖放新建数组→无限循环 | 前端/React | 🟢 | frontend-react.md |
 | DEV-15 | _useMock 单例缓存卡死 mock 模式 | 前端/React | 🟢 | frontend-react.md |
 | DEV-BUG-10 | StrictMode 双挂载 WS 消息重复 | 前端/React | 🟢 | frontend-react.md |
+| DEV-48 | 有存活 agent 却重新拉人（含 DEV-55） | 通用/流程 | 🟢 | flow-brainstorm.md |
+| DEV-49 | 议题讨论结论未落盘纪要 + 未写入 MCP 记忆 | 通用/流程 | 🟢 | flow-brainstorm.md |
+| DEV-50 | 脑暴被锚定，无人挑战前提假设（含 DEV-52） | 通用/流程 | 🟢 | flow-brainstorm.md |
+| DEV-51 | 向用户提交决策时违反呈现三原则 | 通用/流程 | 🟡×2 | flow-brainstorm.md |
+| ~~DEV-52~~ | → 已合并到 DEV-50 | — | — | flow-brainstorm.md |
+| DEV-53 | 问了用户但不等回答就自己执行 | 通用/流程 | 🟢 | flow-gate.md |
+| ~~DEV-55~~ | → 已合并到 DEV-48 | — | — | flow-brainstorm.md |

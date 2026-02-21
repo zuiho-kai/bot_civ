@@ -11,4 +11,7 @@ nul
 skills/
 .venv/
 *.bat
+/*.png
 scripts/task-runner/
+zuiho-kai.github.io/
+.claude/worktrees/
