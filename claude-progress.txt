@@ -5,14 +5,14 @@
 
 ## 当前状态
 
-- **阶段**: M6.2 P4 完成（公共记忆种子数据）
+- **阶段**: M6.2 补丁包全部完成（P1~P4）
 - **技术栈**: FastAPI + WebSocket | React + Vite | SQLite + NumPy + 硅基流动 Embedding API
 - **仓库**: https://github.com/zuiho-kai/bot_civ
-- **测试**: UT 266/266 全绿（含 P4 UT 9 + ST 3）
+- **测试**: UT+E2E 283 passed, 11 skipped 全绿
 
 ## 原型需求差距评估（2026-02-20 设计终端产出）
 
-### 原型完成度：~85%
+### 原型完成度：~93%（M6.2 补丁包后）
 
 | 原型需求 | 完成度 | 缺口 |
 |----------|--------|------|
@@ -21,13 +21,27 @@
 | 发言频率控制+额度 | 100% | — |
 | 信用点经济系统 | 100% | — |
 | 页游城市（打卡/商店/建造/交易） | 95% | — |
-| Agent 独立人格 | 90% | 缺 SOUL.md 级深度人格 |
-| 短期/长期记忆 | 90% | 缺短→长自动升级 |
-| 公共记忆 | 95% | 种子数据 13 条已填充，缺短→长自动升级 |
-| 悬赏任务 | 70% | 后端有，缺前端集成+自动验证 |
+| Agent 独立人格 | 100% | ✅ SOUL.md 深度人格已实现（M6.2-P2） |
+| 短期/长期记忆 | 95% | M6.2-P1 LLM 摘要提取已实现，缺短→长自动升级 |
+| 公共记忆 | 95% | M6.2-P4 种子数据 10~15 条已填充，幂等+自愈 |
+| 悬赏任务 | 90% | M6.2-P3 Agent 自主接取已实现，缺前端集成+自动验证 |
 | 游戏币（第二货币） | 0% | 原型阶段信用点够用，可延后 |
 | 模型切换消耗信用点 | 0% | 锦上添花 |
 | 头像装饰/皮肤 | 0% | 纯装饰性 |
+
+### 剩余缺口（M6.2 后）
+
+| 缺口 | 来源 | 影响 | 优先级 |
+|------|------|------|--------|
+| 短期→长期记忆自动升级 | 记忆系统 95%→100% | 高频/重要记忆不会沉淀，7 天后丢失 | 高 |
+| 悬赏前端展示 + 自动验证 | 悬赏 90%→100% | 用户看不到接取状态，完成无法自动结算 | 高 |
+| 页游城市收尾（建筑升级/队列） | 城市 95%→100% | 建造深度不够 | 中 |
+| F31 策略自动机重做 | M6 冻结项 | 需独立调度循环，当前架构不支持 | 低（等 M6.3） |
+| F33 代码执行沙箱 | M6 未开始 | Agent 无法写代码执行 | 低 |
+| F34 长任务编排 | M6 未开始 | 多步计划无法持久化+自动推进 | 低（等 M6.3） |
+| 游戏币（第二货币） | 原型 0% | 信用点够用，可延后 | 延后 |
+| 模型切换消耗信用点 | 原型 0% | 锦上添花 | 延后 |
+| 头像装饰/皮肤 | 原型 0% | 纯装饰 | 延后 |
 
 ### M6 完成度：~50%（F31 冻结，F32+F35 完成，F33+F34 未开始）
 
@@ -47,6 +61,23 @@
 4. F33 代码沙箱 — 锦上添花
 
 ## 最近活动
+
+### 2026-02-22
+- M6.2-P3（悬赏 Agent 自主接取）完成
+  - 后端：bounty_service.py 新建（claim_bounty CAS 原子校验）+ autonomy_service 世界快照第 11 板块 + tool_registry claim_bounty 工具 + bounties.py API 重构
+  - 测试：test_autonomy_unit.py 单元测试
+- M6.2-P4（公共记忆知识库填充）完成
+  - 后端：main.py seed_public_memories()（幂等差集 + begin_nested 单条失败跳过）+ data/public_memories.json 种子数据
+  - 测试：test_seed_public_memories.py + test_st_seed_public_memories.py
+- M6.2-P2（SOUL 深度人格）完成：283 passed, 11 skipped 全绿
+  - 后端：Agent 表新增 personality_json JSON 列 + SoulPersonality Pydantic 模型（lenient 截断校验）+ SOUL_PROMPT_TEMPLATE 注入 system prompt + RunnerPool 缓存刷新可变字段
+  - 前端：AgentCard 只读渲染 SOUL 人格（7 字段）+ relationships 超 3 对换行展示
+  - 测试：29 UT（test_soul_personality.py）+ 7 E2E（test_soul_e2e.py）
+  - CR 修复：get_or_create 缓存过期 personality_json → 刷新可变字段
+  - 美学审核修复：行间距 2→4px、word-break、relationships 换行
+  - 流程落盘：DEV-4×17 CR 复核规则 + DEV-39×2 美学独立 gate + checklist 第 11 条门控顺序
+- M6.2-P1（记忆提取质量优化）完成：276 passed 全绿
+  - 后端：_extract_memory 重写为 LLM 摘要 + fire-and-forget + fallback 链（gemma-3-12b → qwen2.5-7b → 截断兜底）
 
 ### 2026-02-21
 - M6.2 全量代码走读完成（P1-P4 四个子阶段）
@@ -79,8 +110,6 @@
   **缺口**
   - 种子数据第 8 条"短期记忆自动升级为长期记忆"实际未实现（只是世界观设定，代码无升级机制）
   - 悬赏自动验证未做（只有接取没有交付闭环）
-
-### 2026-02-21
 - M6 Phase 3（F35 Agent 状态可视化）完成：ST 13/13 全绿 + pytest 239/239 全绿
   - 后端：AgentStatus 4 态枚举 + status_helper 广播 + agent_runner/autonomy_service 状态生命周期
   - 前端：AgentStatusPanel 徽章 + ActivityFeed 10 种 action + DiscordLayout WS 处理
@@ -135,6 +164,10 @@
 - M6.1 ✅: 建造系统（建造/工期/建造中列表，ST 9/9 全绿）
 - M6-P2 ✅: F32 上网工具（web_search + web_fetch，254 UT 全绿，四轮独立 CR 归零）
 - M6-P3 ✅: F35 Agent 状态可视化（4 态徽章+行动日志+WS 广播，ST 13/13 全绿）
+- M6.2-P1 ✅: 记忆提取质量优化（LLM 摘要 + fire-and-forget + fallback 链，276 passed）
+- M6.2-P2 ✅: SOUL 深度人格（personality_json 7 字段 + prompt 注入 + 缓存刷新，283 passed）
+- M6.2-P3 ✅: 悬赏 Agent 自主接取（bounty_service + 世界快照 + CAS 原子竞争 + tool_registry）
+- M6.2-P4 ✅: 公共记忆知识库填充（种子数据 JSON + 幂等差集 + 单条失败自愈）
 - M6 待定: Agent CLI 运行时（持久进程 + 上网 + 任意工具）
 
 ## 遗留

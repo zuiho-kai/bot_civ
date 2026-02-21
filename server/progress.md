@@ -7,16 +7,96 @@
 
 ## 当前状态
 
-- **当前任务**: M6 Phase 3 完成（F35 Agent 状态可视化）
-- **最近完成**: M6 Phase 3（F35 Agent 状态可视化，239 UT + ST 13/13 全绿，二次独立 CR 归零）
-- **待办优先级**: M6 Phase 2（F32 上网工具）→ P1.2 持久化+前端
+- **当前任务**: M6.2 补丁包全部完成（P1~P4）
+- **最近完成**: M6.2-P4（公共记忆知识库填充）
+- **待办优先级**: M6.3（经济重构）
 - **阻塞问题**: 无
 
 ---
 
 ## 进展日志
 
-### 2026-02-20
+### 2026-02-22
+
+#### M6.2-P2 完成 — SOUL 深度人格
+
+**改动内容**（15 文件，+646 -21）：
+
+后端：
+1. **tables.py**: Agent 表新增 `personality_json` JSON 列
+2. **database.py**: `_migrate_personality_json` 迁移函数
+3. **schemas.py**: `SoulPersonality` Pydantic 模型（lenient 截断校验）+ AgentOut/AgentCreate/AgentUpdate 扩展
+4. **agents.py**: create/update 端点增加 `_validate_personality_json()` 校验清洗
+5. **agent_runner.py**: `SOUL_PROMPT_TEMPLATE` + `_build_soul_block()` + `get_or_create` 缓存刷新可变字段
+6. **chat.py**: `handle_wakeup` 透传 `personality_json`
+7. **autonomy_service.py**: `chat_tasks` 构造新增 `personality_json`
+
+前端：
+8. **types.ts**: `SoulPersonality` 接口 + Agent 接口加 `personality_json`
+9. **AgentManager.tsx**: AgentCard 只读渲染 SOUL 人格（7 字段）+ relationships 超 3 对换行
+10. **App.css**: `.ac-soul` 样式（行间距 4px、word-break）
+
+测试：
+11. **test_soul_personality.py**（新建）: 29 UT — schema 校验/清洗逻辑/prompt 格式化/模板分支/缓存刷新
+12. **test_soul_e2e.py**（新建）: 7 E2E — 创建/截断/无效忽略/更新/清除/无 SOUL/extra strip
+
+流程落盘：
+13. **flow-rules.md**: DEV-4×17 + DEV-39×2
+14. **_index.md**: 索引更新
+15. **checklist-code-change.md**: 第 11 条门控顺序
+
+**CR 修复**: get_or_create 缓存过期 personality_json → 刷新可变字段（persona/model/personality_json）
+
+**美学审核修复**: 行间距 2→4px、word-break: break-word、relationships 超 3 对换行
+
+**验证**: 283 passed, 11 skipped 全绿
+
+**状态**: ✅ 完成
+
+---
+
+#### M6.2-P3 完成 — 悬赏 Agent 自主接取
+
+**改动内容**：
+
+后端：
+1. **bounty_service.py**（新建）: `claim_bounty()` CAS 原子校验，同时最多 1 个悬赏限制
+2. **autonomy_service.py**: `build_world_snapshot()` 新增第 11 板块"悬赏任务" + SYSTEM_PROMPT 追加 `claim_bounty` + 白名单 + 执行分支 + 广播函数
+3. **tool_registry.py**: `_handle_claim_bounty()` + `CLAIM_BOUNTY_TOOL` 注册
+4. **bounties.py**: API 重构为调用 bounty_service
+
+测试：
+5. **test_autonomy_unit.py**（新建）: 世界快照/白名单/执行成功失败场景
+
+**状态**: ✅ 完成
+
+---
+
+#### M6.2-P4 完成 — 公共记忆知识库填充
+
+**改动内容**：
+
+1. **main.py**: `seed_public_memories()` 幂等差集 + `begin_nested()` 单条失败跳过
+2. **data/public_memories.json**: 10~15 条世界观/规则种子数据
+
+测试：
+3. **test_seed_public_memories.py**（新建）: 幂等性/字段正确性/embedding 失败/自愈
+4. **test_st_seed_public_memories.py**（新建）: 向量检索可用性/启动不阻塞
+
+**状态**: ✅ 完成
+
+---
+
+**改动内容**：
+- `chat.py:_extract_memory()` 重写为 LLM 摘要（fire-and-forget 模式）
+- `MODEL_REGISTRY` 新增 `memory-summary-model`
+- Fallback 链: openrouter gemma-3-12b → siliconflow qwen2.5-7b → 截断兜底
+
+**验证**: 276 passed 全绿
+
+**状态**: ✅ 完成
+
+---
 
 #### M6 Phase 3 完成 — F35 Agent 状态可视化
 
@@ -245,4 +325,7 @@
 | M5 记忆系统 + 城市经济 | 2026-02-18 | E2E ✅ |
 | M5.1 资源转赠 + Tool Use | 2026-02-19 | ST 8/8 全绿 ✅ |
 | M5.2 交易市场（挂单/接单/撤单） | 2026-02-20 | ST 16/16 全绿 + pytest 211/211 ✅ |
-| M6.1 建造系统 | 2026-02-21 | ST 9/9 全绿 + pytest 211/211 ✅ |
+| M6.2-P1 记忆提取质量优化 | 2026-02-22 | pytest 276 passed ✅ |
+| M6.2-P2 SOUL 深度人格 | 2026-02-22 | 283 passed, 11 skipped ✅ |
+| M6.2-P3 悬赏 Agent 自主接取 | 2026-02-22 | UT ✅ |
+| M6.2-P4 公共记忆知识库填充 | 2026-02-22 | UT + ST ✅ |
